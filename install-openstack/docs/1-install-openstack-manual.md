@@ -462,3 +462,372 @@ openstack token issue
 
 ![](../images/1-install-manual-ops/token-issue.png)
 
+### 2.7. Cài đặt và cấu hình glance
+
+- Tạo Database:
+
+```
+mysql -u root -p
+CREATE DATABASE glance;
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY '013279227Anh';
+exit
+```
+
+- Tạo user:
+
+```
+openstack user create --domain default --password 013279227Anh glance
+openstack role add --project service --user glance admin
+openstack service create --name glance --description "OpenStack Image" image
+```
+
+- Tạo endpoint:
+
+```
+openstack endpoint create --region RegionOne image public http://172.16.2.56:9292
+openstack endpoint create --region RegionOne image admin http://172.16.2.56:9292
+openstack endpoint create --region RegionOne image internal http://172.16.2.56:9292
+```
+
+- Cài packages:
+
+```
+yum install -y openstack-glance
+```
+
+- Cấu hình glance api:
+
+```
+cp /etc/glance/glance-api.conf /etc/glance/glance-api.conf.org 
+rm -rf /etc/glance/glance-api.conf
+```
+
+```
+cat << EOF >> /etc/glance/glance-api.conf
+[DEFAULT]
+bind_host = 172.16.2.56
+registry_host = 172.16.2.56
+[cors]
+[database]
+connection = mysql+pymysql://glance:013279227Anh@172.16.2.56/glance
+[glance_store]
+stores = file,http
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+[image_format]
+[keystone_authtoken]
+auth_uri = http://172.16.2.56:5000
+auth_url = http://172.16.2.56:5000
+memcached_servers = 172.16.2.56:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = glance
+password = 013279227Anh
+[matchmaker_redis]
+[oslo_concurrency]
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[paste_deploy]
+flavor = keystone
+[profiler]
+[store_type_location_strategy]
+[task]
+[taskflow_executor]
+EOF
+```
+
+- Cấu hình glance registry:
+
+```
+cp /etc/glance/glance-registry.conf /etc/glance/glance-registry.conf.org
+rm -rf /etc/glance/glance-registry.conf
+```
+
+```
+cat << EOF >> /etc/glance/glance-registry.conf
+[DEFAULT]
+bind_host = 172.16.2.56
+[database]
+connection = mysql+pymysql://glance:013279227Anh@172.16.2.56/glance
+[keystone_authtoken]
+auth_uri = http://172.16.2.56:5000
+auth_url = http://172.16.2.56:5000
+memcached_servers = 172.16.2.56
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = glance
+password = 013279227Anh
+[matchmaker_redis]
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+[oslo_messaging_zmq]
+[oslo_policy]
+[paste_deploy]
+flavor = keystone
+[profiler]
+EOF
+```
+
+- Phân quyền file cấu hình:
+
+```
+chown root:glance /etc/glance/glance-api.conf
+chown root:glance /etc/glance/glance-registry.conf
+```
+
+- Đồng bộ Database:
+
+```
+su -s /bin/sh -c "glance-manage db_sync" glance
+```
+
+- Enable và start dịch vụ:
+
+```
+systemctl enable openstack-glance-api.service openstack-glance-registry.service
+systemctl start openstack-glance-api.service openstack-glance-registry.service
+```
+
+- Download và upload image test cirros:
+
+```
+wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
+openstack image create "cirros" \
+  --file cirros-0.3.5-x86_64-disk.img \
+  --disk-format qcow2 --container-format bare \
+  --public
+```
+
+Sau khi tạo images, mặc định image sẽ được đưa vào thư mục `/var/lib/glance/images`
+
+![](../images/1-install-manual-ops/cirros-glance.png)
+
+### 2.8. Cài đặt và cấu hình nova
+
+- Tạo Databases:
+
+```
+mysql -u root -p013279227Anh
+CREATE DATABASE nova_api;
+CREATE DATABASE nova;
+CREATE DATABASE nova_cell0;
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY '013279227Anh';
+exit
+```
+
+- Tạo user và endpoint:
+
+```
+openstack user create --domain default --password 013279227Anh nova
+openstack role add --project service --user nova admin
+openstack service create --name nova --description "OpenStack Compute" compute
+```
+
+```
+openstack endpoint create --region RegionOne compute public http://172.16.2.56:8774/v2.1
+openstack endpoint create --region RegionOne compute admin http://172.16.2.56:8774/v2.1
+openstack endpoint create --region RegionOne compute internal http://172.16.2.56:8774/v2.1
+```
+
+```
+openstack user create --domain default --password Welcome123 placement
+openstack role add --project service --user placement admin
+openstack service create --name placement --description "Placement API" placement
+```
+
+```
+openstack endpoint create --region RegionOne placement public http://172.16.2.56:8778
+openstack endpoint create --region RegionOne placement admin http://172.16.2.56:8778
+openstack endpoint create --region RegionOne placement internal http://172.16.2.56:8778
+```
+
+- Tải packages:
+
+```
+yum install -y openstack-nova-api openstack-nova-conductor openstack-nova-console openstack-nova-novncproxy openstack-nova-scheduler openstack-nova-placement-api
+```
+
+- Cấu hình nova:
+
+```
+cp /etc/nova/nova.conf /etc/nova/nova.conf.org 
+rm -rf /etc/nova/nova.conf
+```
+
+```
+cat << EOF >> /etc/nova/nova.conf
+[DEFAULT]
+my_ip = 172.16.2.56
+enabled_apis = osapi_compute,metadata
+use_neutron = True
+osapi_compute_listen=172.16.2.56
+metadata_host=172.16.2.56
+metadata_listen=172.16.2.56
+metadata_listen_port=8775
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+transport_url = rabbit://openstack:013279227Anh@172.16.2.56:5672
+[api]
+auth_strategy = keystone
+[api_database]
+connection = mysql+pymysql://nova:013279227Anh@172.16.2.56/nova_api
+[barbican]
+[cache]
+backend = oslo_cache.memcache_pool
+enabled = true
+memcache_servers = 172.16.2.56:11211
+[cells]
+[cinder]
+[compute]
+[conductor]
+[console]
+[consoleauth]
+[cors]
+[crypto]
+[database]
+connection = mysql+pymysql://nova:013279227Anh@172.16.2.56/nova
+[devices]
+[ephemeral_storage_encryption]
+[filter_scheduler]
+[glance]
+api_servers = http://172.16.2.56:9292
+[guestfs]
+[healthcheck]
+[hyperv]
+[ironic]
+[key_manager]
+[keystone]
+[keystone_authtoken]
+auth_url = http://172.16.2.56:5000/v3
+memcached_servers = 172.16.2.56:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = 013279227Anh
+[libvirt]
+[matchmaker_redis]
+[metrics]
+[mks]
+[neutron]
+[notifications]
+[osapi_v21]
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+rabbit_ha_queues = true
+rabbit_retry_interval = 1
+rabbit_retry_backoff = 2
+amqp_durable_queues= true
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[pci]
+[placement]
+os_region_name = RegionOne
+project_domain_name = Default
+project_name = service
+auth_type = password
+user_domain_name = Default
+auth_url = http://172.16.2.56:5000/v3
+username = placement
+password = 013279227Anh
+[quota]
+[rdp]
+[remote_debug]
+[scheduler]
+discover_hosts_in_cells_interval = 300
+[serial_console]
+[service_user]
+[spice]
+[upgrade_levels]
+[vault]
+[vendordata_dynamic_auth]
+[vmware]
+[vnc]
+novncproxy_host=172.16.2.56
+enabled = true
+vncserver_listen = 172.16.2.56
+vncserver_proxyclient_address = 172.16.2.56
+novncproxy_base_url = http://172.16.2.56:6080/vnc_auto.html
+[workarounds]
+[wsgi]
+[xenserver]
+[xvp]
+EOF
+```
+
+- Thêm vào file 00-nova-placement-api.conf:
+
+```
+cat << 'EOF' >> /etc/httpd/conf.d/00-nova-placement-api.conf
+
+<Directory /usr/bin>
+   <IfVersion >= 2.4>
+      Require all granted
+   </IfVersion>
+   <IfVersion < 2.4>
+      Order allow,deny
+      Allow from all
+   </IfVersion>
+</Directory>
+EOF
+```
+
+- Cấu hình bind port cho nova-placement:
+
+```
+sed -i -e 's/VirtualHost \*/VirtualHost 172.16.2.56/g' /etc/httpd/conf.d/00-nova-placement-api.conf
+sed -i -e 's/Listen 8778/Listen 172.16.2.56:8778/g' /etc/httpd/conf.d/00-nova-placement-api.conf
+```
+
+```
+systemctl restart httpd
+```
+
+- Đồng bộ Databases:
+
+```
+su -s /bin/sh -c "nova-manage api_db sync" nova
+su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+su -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+su -s /bin/sh -c "nova-manage db sync" nova
+```
+
+Lưu ý: Bỏ qua cảnh báo `Warning`
+
+- Enable và start service:
+
+```
+systemctl enable openstack-nova-api.service openstack-nova-scheduler.service openstack-nova-consoleauth.service openstack-nova-conductor.service openstack-nova-novncproxy.service
+systemctl start openstack-nova-api.service openstack-nova-scheduler.service openstack-nova-consoleauth.service openstack-nova-conductor.service openstack-nova-novncproxy.service
+```
+
+- Kiểm tra lại Dịch vụ:
+
+```
+openstack compute service list
+```
+
+![](../images/1-install-manual-ops/nova-services.png)
+
