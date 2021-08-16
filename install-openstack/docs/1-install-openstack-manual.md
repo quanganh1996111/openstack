@@ -262,3 +262,203 @@ rabbitmqctl set_user_tags openstack administrator
 
 ### 2.6. Cài đặt keystone
 
+- Tạo Database:
+
+```
+mysql -u root -p
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '013279227Anh';
+FLUSH PRIVILEGES;
+exit
+```
+
+- Cài đặt package:
+
+```
+yum install openstack-keystone httpd mod_wsgi -y
+```
+
+- Cấu hình bind port:
+
+```
+cp /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
+sed -i -e 's/VirtualHost \*/VirtualHost 172.16.2.56/g' /etc/httpd/conf.d/wsgi-keystone.conf
+sed -i -e 's/Listen 5000/Listen 172.16.2.56:5000/g' /etc/httpd/conf.d/wsgi-keystone.conf
+sed -i -e 's/Listen 35357/Listen 172.16.2.56:35357/g' /etc/httpd/conf.d/wsgi-keystone.conf
+sed -i -e 's/^Listen.*/Listen 172.16.2.56:80/g' /etc/httpd/conf/httpd.conf
+```
+
+- Cấu hình keystone:
+
+```
+cp /etc/keystone/keystone.conf /etc/keystone/keystone.conf.org
+rm -rf /etc/keystone/keystone.conf
+```
+
+```
+cat << EOF >> /etc/keystone/keystone.conf
+[DEFAULT]
+[assignment]
+[auth]
+[cache]
+[catalog]
+[cors]
+[credential]
+[database]
+connection = mysql+pymysql://keystone:013279227Anh@172.16.2.56/keystone
+[domain_config]
+[endpoint_filter]
+[endpoint_policy]
+[eventlet_server]
+[federation]
+[fernet_tokens]
+[healthcheck]
+[identity]
+[identity_mapping]
+[ldap]
+[matchmaker_redis]
+[memcache]
+[oauth1]
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[paste_deploy]
+[policy]
+[profiler]
+[resource]
+[revoke]
+[role]
+[saml]
+[security_compliance]
+[shadow_users]
+[signing]
+[token]
+provider = fernet
+[tokenless_auth]
+[trust]
+EOF
+```
+
+- Phân quyền file cấu hình:
+
+```
+chown root:keystone /etc/keystone/keystone.conf
+```
+
+- Đồng bộ Database:
+
+```
+su -s /bin/sh -c "keystone-manage db_sync" keystone
+```
+
+- Setup fernet key:
+
+```
+keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+```
+
+- Bootstrap keystone:
+
+```
+keystone-manage bootstrap --bootstrap-password 013279227Anh \
+ --bootstrap-admin-url http://172.16.2.56:5000/v3/ \
+ --bootstrap-internal-url http://172.16.2.56:5000/v3/ \
+ --bootstrap-public-url http://172.16.2.56:5000/v3/ \
+```
+
+- Khởi động lại Dịch vụ HTTPD
+
+```
+systemctl enable httpd.service
+systemctl restart httpd.service
+```
+
+- Export biến môi trường:
+
+```
+export OS_USERNAME=admin
+export OS_PASSWORD=013279227Anh
+export OS_PROJECT_NAME=admin
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_AUTH_URL=http://172.16.2.56:35357/v3
+export OS_IDENTITY_API_VERSION=3
+```
+
+- Tạo domain:
+
+```
+openstack domain create --description "An Example Domain" example
+openstack project create --domain default --description "Service Project" service
+```
+
+- Tạo project và user:
+
+```
+openstack project create --domain default  --description "Demo Project" demo
+openstack user create --domain default --password 013279227Anh demo
+```
+
+- Tạo role và gắn role:
+
+```
+openstack role create user
+openstack role add --project demo --user demo user
+```
+
+- Unset 2 biến môi trường:
+
+```
+unset OS_AUTH_URL OS_PASSWORD
+```
+
+- Tạo token:
+
+```
+openstack --os-auth-url http://172.16.4.125:35357/v3 \
+  --os-project-domain-name Default --os-user-domain-name Default \
+  --os-project-name admin --os-username admin token issue
+```
+
+- Tạo file xác thực:
+
+```
+cat << EOF >> admin-openrc
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=013279227Anh
+export OS_AUTH_URL=http://172.16.2.56:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+EOF
+```
+
+```
+cat << EOF >> demo-openrc
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=013279227Anh
+export OS_AUTH_URL=http://172.16.2.56:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+EOF
+```
+
+- Kiểm tra cấu hình keystone:
+
+```
+ . admin-openrc
+openstack token issue
+```
+
+![](../images/1-install-manual-ops/token-issue.png)
+
