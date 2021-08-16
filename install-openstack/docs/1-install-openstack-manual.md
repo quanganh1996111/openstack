@@ -72,6 +72,8 @@ Có thể tham khảo thêm việc enable ảo hóa trên Server sử dụng chi
 
 ## Phần 2. Cấu hình Node Controller
 
+### 2.1. Cấu hình cơ bản
+
 #### Cấu hình IP
 
 ```
@@ -131,4 +133,132 @@ echo "172.16.2.62 compute02" >> /etc/hosts
 ```
 
 #### Tạo SSH key và coppy sang các node compute
+
+```
+ssh-keygen -t rsa -f /root/.ssh/id_rsa -q -P ""
+ssh-copy-id -o StrictHostKeyChecking=no -i /root/.ssh/id_rsa.pub root@controller
+ssh-copy-id -o StrictHostKeyChecking=no -i /root/.ssh/id_rsa.pub root@compute01
+ssh-copy-id -o StrictHostKeyChecking=no -i /root/.ssh/id_rsa.pub root@compute02
+scp /root/.ssh/id_rsa root@compute01:/root/.ssh/
+scp /root/.ssh/id_rsa root@compute02:/root/.ssh/
+```
+
+Đứng từ `controller` tiến hành SSH đến 2 node `compute`
+
+![](../images/1-install-manual-ops/ssh-compute.png)
+
+#### Cài đặt các gói cần thiết
+
+```
+yum -y install centos-release-openstack-queens
+yum -y install crudini wget vim
+yum -y install python-openstackclient openstack-selinux python2-PyMySQL
+```
+
+### 2.2. Cài đặt và cấu hình NTP
+
+```
+yum -y install chrony
+sed -i 's/server 0.centos.pool.ntp.org iburst/ \
+server 1.vn.pool.ntp.org iburst \
+server 0.asia.pool.ntp.org iburst \
+server 3.asia.pool.ntp.org iburst/g' /etc/chrony.conf
+sed -i 's/server 1.centos.pool.ntp.org iburst/#/g' /etc/chrony.conf
+sed -i 's/server 2.centos.pool.ntp.org iburst/#/g' /etc/chrony.conf
+sed -i 's/server 3.centos.pool.ntp.org iburst/#/g' /etc/chrony.conf
+sed -i 's/#allow 192.168.0.0\/16/allow 10.10.10.0\/24/g' /etc/chrony.conf
+```
+
+```
+systemctl enable chronyd.service
+systemctl start chronyd.service
+chronyc sources
+```
+
+### 2.3. Cài đặt và cấu hình memcache
+
+- Cài đặt memcached:
+
+```
+yum install -y memcached
+sed -i "s/-l 127.0.0.1,::1/-l 10.10.10.118/g" /etc/sysconfig/memcached
+```
+
+- Khởi động dịch vụ:
+
+```
+systemctl enable memcached.service
+systemctl restart memcached.service
+```
+
+### 2.4. Cài đặt và cấu hình MariaDB
+
+- Cài đặt:
+
+```
+yum install -y mariadb mariadb-server python2-PyMySQL
+```
+
+- Copy lại file cấu hình gốc:
+
+```
+cp /etc/my.cnf.d/server.cnf /etc/my.cnf.d/server.cnf.orig
+rm -rf /etc/my.cnf.d/server.cnf
+```
+
+- Config file cấu hình mới:
+
+```
+cat << EOF > /etc/my.cnf.d/openstack.cnf
+[mysqld]
+bind-address = 172.16.2.56
+default-storage-engine = innodb
+innodb_file_per_table
+max_connections = 4096
+collation-server = utf8_general_ci
+character-set-server = utf8
+EOF
+```
+
+- Khởi động lại Dịch vụ:
+
+```
+systemctl enable mariadb.service
+systemctl restart mariadb.service
+```
+
+- Đặt lại password cho user mysql
+
+Lưu ý: Password đủ độ mạnh và tránh ký tự đặc biệt ở cuối như #,@
+
+### 2.5. Cài đặt và cấu hình RabbitMQ
+
+- Cài đặt:
+
+```
+yum -y install rabbitmq-server
+```
+
+- Cấu hình rabbitmq:
+
+```
+systemctl enable rabbitmq-server.service
+systemctl start rabbitmq-server.service
+rabbitmq-plugins enable rabbitmq_management
+systemctl restart rabbitmq-server
+curl -O http://localhost:15672/cli/rabbitmqadmin
+chmod a+x rabbitmqadmin
+mv rabbitmqadmin /usr/sbin/
+rabbitmqadmin list users
+```
+
+- Cấu hình trên node controller:
+
+```
+rabbitmqctl add_user openstack 013279227Anh
+rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+rabbitmqctl set_user_tags openstack administrator
+```
+
+### 2.6. Cài đặt keystone
 
