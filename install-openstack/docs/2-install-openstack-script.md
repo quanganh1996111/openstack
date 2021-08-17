@@ -6,3 +6,4 @@
 
 ![](../images/2-install-script-ops/ip-planning-script-ops.png)
 
+
