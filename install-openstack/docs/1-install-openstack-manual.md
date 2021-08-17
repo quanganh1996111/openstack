@@ -12,7 +12,41 @@
 
 [Phần 2. Cấu hình Node Controller](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#ph%E1%BA%A7n-2-c%E1%BA%A5u-h%C3%ACnh-node-controller)
 
-- [1. Cấu hình cơ bản]()
+- [1. Cấu hình cơ bản](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#1-c%E1%BA%A5u-h%C3%ACnh-c%C6%A1-b%E1%BA%A3n)
+
+- [2. Cài đặt và cấu hình NTP](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#2-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-ntp)
+
+- [3. Cài đặt và cấu hình memcache](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#3-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-memcache)
+
+- [4. Cài đặt và cấu hình MariaDB](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#4-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-mariadb)
+
+- [5. Cài đặt và cấu hình RabbitMQ](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#5-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-rabbitmq)
+
+- [6. Cài đặt keystone](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#6-c%C3%A0i-%C4%91%E1%BA%B7t-keystone)
+
+- [7. Cài đặt và cấu hình glance](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#7-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-glance)
+
+- [8. Cài đặt và cấu hình nova](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#8-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-nova)
+
+- [9. Cài đặt và cấu hình neutron](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#9-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-neutron)
+
+- [10. Cài đặt và cấu hình horizon](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#10-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-horizon)
+
+- [11. Cài đặt và cấu hình Cinder](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#11-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-cinder)
+
+[Phần 3. Cấu hình trên Node Compute](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#ph%E1%BA%A7n-3-c%E1%BA%A5u-h%C3%ACnh-tr%C3%AAn-node-compute)
+
+- [1. Cấu hình cơ bản](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#1-c%E1%BA%A5u-h%C3%ACnh-c%C6%A1-b%E1%BA%A3n-1)
+
+- [2. Cài đặt nova](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#2-c%C3%A0i-%C4%91%E1%BA%B7t-nova)
+
+- [3. Cài đặt neutron](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#3--c%C3%A0i-%C4%91%E1%BA%B7t-neutron)
+
+[Phần 4. Một số thao tác trên Horizon](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#ph%E1%BA%A7n-4-m%E1%BB%99t-s%E1%BB%91-thao-t%C3%A1c-tr%C3%AAn-horizon)
+
+- [1. Truy cập Horizon](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#1-truy-c%E1%BA%ADp-horizon)
+
+- [2. Tạo flavor](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#2-t%E1%BA%A1o-flavor)
 
 ## Phần 1. Chuẩn bị
 
