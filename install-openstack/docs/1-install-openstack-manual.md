@@ -1132,6 +1132,12 @@ OPENSTACK_NEUTRON_NETWORK = {
 TIME_ZONE = "Asia/Ho_Chi_Minh"
 ```
 
+- Phân quyền thư mục `/etc/openstack-dashboard/local_settings`
+
+```
+chown -R root:apache /etc/openstack-dashboard/local_settings
+```
+
 - Thêm vào file `/etc/httpd/conf.d/openstack-dashboard.conf`
 
 ```
