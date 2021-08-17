@@ -1,20 +1,32 @@
-# Cài đặt OpenStack Manual
+# Cài đặt OpenStack Manual trên CentOS 7
 
 ## Mục lục
 
+[Phần 1. Chuẩn bị](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#ph%E1%BA%A7n-1-chu%E1%BA%A9n-b%E1%BB%8B)
+
+- [1. Mô hình triển khai](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#1-m%C3%B4-h%C3%ACnh-tri%E1%BB%83n-khai)
+
+- [2. Danh sách IP](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#2-danh-s%C3%A1ch-ip)
+
+- [3. Bật chế độ ảo hóa trên KVM](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#3-b%E1%BA%ADt-ch%E1%BA%BF-%C4%91%E1%BB%99-%E1%BA%A3o-h%C3%B3a-tr%C3%AAn-kvm)
+
+[Phần 2. Cấu hình Node Controller](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md#ph%E1%BA%A7n-2-c%E1%BA%A5u-h%C3%ACnh-node-controller)
+
+- [1. Cấu hình cơ bản]()
+
 ## Phần 1. Chuẩn bị
 
-### 1. Mô hình triển khai
+### 1.1. Mô hình triển khai
 
 Mô hình triển khai gồm 1 node Controller, 2 node Compute.
 
 ![](../images/1-install-manual-ops/install-manual-ops.png)
 
-### 2. Danh sách IP
+### 1.2. Danh sách IP
 
 ![](../images/1-install-manual-ops/IP-planning-manual.png)
 
-### 3. Bật chế độ ảo hóa trên KVM
+### 1.3. Bật chế độ ảo hóa trên KVM
 
 Ở đây triển khai trên môi trường ảo hóa KVM nên ta phải bật mode ảo hóa đối với máy ảo được tạo ra.
 
@@ -72,7 +84,7 @@ Có thể tham khảo thêm việc enable ảo hóa trên Server sử dụng chi
 
 ## Phần 2. Cấu hình Node Controller
 
-### 2.1. Cấu hình cơ bản
+### 1. Cấu hình cơ bản
 
 #### Cấu hình IP
 
@@ -155,7 +167,7 @@ yum -y install crudini wget vim
 yum -y install python-openstackclient openstack-selinux python2-PyMySQL
 ```
 
-### 2.2. Cài đặt và cấu hình NTP
+### 2. Cài đặt và cấu hình NTP
 
 ```
 yum -y install chrony
@@ -175,7 +187,7 @@ systemctl start chronyd.service
 chronyc sources
 ```
 
-### 2.3. Cài đặt và cấu hình memcache
+### 3. Cài đặt và cấu hình memcache
 
 - Cài đặt memcached:
 
@@ -191,7 +203,7 @@ systemctl enable memcached.service
 systemctl restart memcached.service
 ```
 
-### 2.4. Cài đặt và cấu hình MariaDB
+### 4. Cài đặt và cấu hình MariaDB
 
 - Cài đặt:
 
@@ -231,7 +243,7 @@ systemctl restart mariadb.service
 
 Lưu ý: Password đủ độ mạnh và tránh ký tự đặc biệt ở cuối như #,@
 
-### 2.5. Cài đặt và cấu hình RabbitMQ
+### 5. Cài đặt và cấu hình RabbitMQ
 
 - Cài đặt:
 
@@ -260,7 +272,7 @@ rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 rabbitmqctl set_user_tags openstack administrator
 ```
 
-### 2.6. Cài đặt keystone
+### 6. Cài đặt keystone
 
 - Tạo Database:
 
@@ -462,7 +474,7 @@ openstack token issue
 
 ![](../images/1-install-manual-ops/token-issue.png)
 
-### 2.7. Cài đặt và cấu hình glance
+### 7. Cài đặt và cấu hình glance
 
 - Tạo Database:
 
@@ -614,7 +626,7 @@ Sau khi tạo images, mặc định image sẽ được đưa vào thư mục `/
 
 ![](../images/1-install-manual-ops/cirros-glance.png)
 
-### 2.8. Cài đặt và cấu hình nova
+### 8. Cài đặt và cấu hình nova
 
 - Tạo Databases:
 
@@ -831,7 +843,7 @@ openstack compute service list
 
 ![](../images/1-install-manual-ops/nova-services.png)
 
-### 2.9. Cài đặt và cấu hình neutron
+### 9. Cài đặt và cấu hình neutron
 
 - Tạo database neutron:
 
@@ -1056,7 +1068,7 @@ systemctl enable neutron-server.service neutron-linuxbridge-agent.service neutro
 systemctl start neutron-server.service neutron-linuxbridge-agent.service neutron-l3-agent.service
 ```
 
-### 2.9. Cài đặt và cấu hình horizon
+### 10. Cài đặt và cấu hình horizon
 
 - Tải packages:
 
@@ -1150,7 +1162,7 @@ echo "WSGIApplicationGroup %{GLOBAL}" >> /etc/httpd/conf.d/openstack-dashboard.c
 systemctl restart httpd.service memcached.service
 ```
 
-### 2.10. Cài đặt và cấu hình Cinder
+### 11. Cài đặt và cấu hình Cinder
 
 Mô hình sử dụng một phân vùng riêng để lưu các volume của máy ảo.
 
@@ -1328,7 +1340,7 @@ systemctl restart openstack-cinder-api.service openstack-cinder-volume.service o
 
 Thực hiện trên 2 node `compute01` và `compute02`
 
-### 3.1. Cấu hình cơ bản
+### 1. Cấu hình cơ bản
 
 - Cấu hình cơ bản:
 
@@ -1408,7 +1420,7 @@ chronyc sources
 
 - Chinh sua file `/etc/yum.repos.d/CentOS-QEMU-EV.repo`
 
-### 3.2. Cài đặt nova
+### 2. Cài đặt nova
 
 - Cài đặt Packages:
 
@@ -1534,7 +1546,7 @@ EOF
 chown root:nova /etc/nova/nova.conf
 ```
 
-### 3.3.  Cài đặt neutron
+### 3.  Cài đặt neutron
 
 - Cài đặt Packages:
 
@@ -1631,7 +1643,7 @@ systemctl restart neutron-linuxbridge-agent.service neutron-dhcp-agent.service n
 
 ## Phần 4. Một số thao tác trên Horizon
 
-### 4.1. Truy cập Horizon
+### 1. Truy cập Horizon
 
 Truy cập theo `http://172.16.2.56/` sẽ tự động chuyển hướng sang `http://172.16.2.56/dashboard`
 
@@ -1639,7 +1651,7 @@ Truy cập theo `http://172.16.2.56/` sẽ tự động chuyển hướng sang `
 
 ![](../images/1-install-manual-ops/horizon-login-success.png)
 
-### 4.2. Tạo flavor
+### 2. Tạo flavor
 
 ```
 openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 0 m1.nano
