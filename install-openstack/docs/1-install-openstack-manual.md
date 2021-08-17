@@ -1170,3 +1170,456 @@ openstack role add --project service --user cinder admin
 openstack service create --name cinderv2 --description "OpenStack Block Storage" volumev2
 openstack service create --name cinderv3 --description "OpenStack Block Storage" volumev3
 ```
+
+```
+openstack endpoint create --region RegionOne volumev2 public http://172.16.2.56:8776/v2/%\(project_id\)s
+openstack endpoint create --region RegionOne volumev2 internal http://172.16.2.56:8776/v2/%\(project_id\)s
+openstack endpoint create --region RegionOne volumev2 admin http://172.16.2.56:8776/v2/%\(project_id\)s
+openstack endpoint create --region RegionOne volumev3 public http://172.16.2.56:8776/v3/%\(project_id\)s
+openstack endpoint create --region RegionOne volumev3 internal http://172.16.2.56:8776/v3/%\(project_id\)s
+openstack endpoint create --region RegionOne volumev3 admin http://172.16.2.56:8776/v3/%\(project_id\)s
+```
+
+- Tải packages:
+
+```
+yum install openstack-cinder targetcli python-keystone -y
+```
+
+- Cài đặt và cấu hình cinder volume với LVM:
+
+```
+yum install -y lvm2
+```
+
+- Khởi động dịch vụ LVM và cho phép khởi động cùng hệ thống.
+
+```
+systemctl enable lvm2-lvmetad.service
+systemctl start lvm2-lvmetad.service
+```
+
+- Tạo LVM physical volume /dev/vdb
+
+```
+pvcreate /dev/vdb
+```
+
+- Tạo LVM volume group `cinder-volumes`
+
+```
+vgcreate cinder-volumes /dev/vdb
+```
+
+- Sửa file `/etc/lvm/lvm.conf`, để LVM chỉ scan ổ sdb cho block storage
+
+```
+devices {
+...
+filter = [ "a/sdb/", "r/.*/"]
+```
+
+- Sửa cấu hình cinder
+
+```
+cp /etc/cinder/cinder.conf /etc/cinder/cinder.conf.bak 
+rm -rf /etc/cinder/cinder.conf
+```
+
+```
+cat << EOF >> /etc/cinder/cinder.conf
+[DEFAULT]
+my_ip = 172.16.2.56
+transport_url = rabbit://openstack:013279227Anh@172.16.2.56:5672
+auth_strategy = keystone
+osapi_volume_listen = 172.16.2.56
+enabled_backends = lvm
+[backend]
+[backend_defaults]
+[barbican]
+[brcd_fabric_example]
+[cisco_fabric_example]
+[coordination]
+[cors]
+[database]
+connection = mysql+pymysql://cinder:013279227Anh@172.16.2.56/cinder
+[fc-zone-manager]
+[healthcheck]
+[key_manager]
+[keystone_authtoken]
+auth_uri = http://172.16.2.56:5000
+auth_url = http://172.16.2.56:35357
+memcached_servers = 172.16.2.56:11211
+auth_type = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = cinder
+password = 013279227Anh
+[matchmaker_redis]
+[nova]
+[oslo_concurrency]
+lock_path = /var/lib/cinder/tmp
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+rabbit_retry_interval = 1
+rabbit_retry_backoff = 2
+amqp_durable_queues = true
+rabbit_ha_queues = true
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[oslo_reports]
+[oslo_versionedobjects]
+[profiler]
+[service_user]
+[ssl]
+[vault]
+[lvm]
+volume_driver = cinder.volume.drivers.lvm.LVMVolumeDriver
+volume_group = cinder-volumes
+iscsi_protocol = iscsi
+iscsi_helper = lioadm
+volume_backend_name = lvm
+EOF
+```
+
+- Phân quyền file cấu hình `/etc/cinder/cinder.conf`:
+
+```
+chown root:cinder /etc/cinder/cinder.conf
+```
+
+- Đồng bộ Database:
+
+```
+su -s /bin/sh -c "cinder-manage db sync" cinder
+```
+
+- Chỉnh sửa file `/etc/nova/nova.conf`
+
+```
+[cinder]
+os_region_name = RegionOne
+```
+
+- Restart dịch vụ nova api
+
+```
+systemctl restart openstack-nova-api.service
+```
+
+- Enable va start dịch vụ:
+
+```
+systemctl enable openstack-cinder-api.service openstack-cinder-volume.service openstack-cinder-scheduler.service
+systemctl restart openstack-cinder-api.service openstack-cinder-volume.service openstack-cinder-scheduler.service
+```
+
+## Phần 3. Cấu hình trên Node Compute
+
+Thực hiện trên 2 node `compute01` và `compute02`
+
+### 3.1. Cấu hình cơ bản
+
+- Cấu hình cơ bản:
+
+```
+hostnamectl set-hostname compute01
+
+sudo systemctl disable firewalld
+sudo systemctl stop firewalld
+sudo systemctl disable NetworkManager
+sudo systemctl stop NetworkManager
+sudo systemctl enable network
+sudo systemctl start network
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+```
+
+- Cấu hình các mode sysctl
+
+```
+echo 'net.ipv4.conf.all.arp_ignore = 1'  >> /etc/sysctl.conf
+echo 'net.ipv4.conf.all.arp_announce = 2'  >> /etc/sysctl.conf
+echo 'net.ipv4.conf.all.rp_filter = 2'  >> /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_be_liberal = 1'  >> /etc/sysctl.conf
+```
+
+```
+cat << EOF >> /etc/sysctl.conf
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.tcp_keepalive_time = 6
+net.ipv4.tcp_keepalive_intvl = 3
+net.ipv4.tcp_keepalive_probes = 6
+net.ipv4.ip_forward = 1
+net.ipv4.conf.all.rp_filter = 0
+net.ipv4.conf.default.rp_filter = 0
+EOF
+```
+
+```
+sysctl -p
+```
+
+- Update OS:
+
+```
+yum -y update
+```
+
+- Khai báo file hosts:
+
+```
+echo "172.16.2.56 controller" >> /etc/hosts
+echo "172.16.2.59 compute01" >> /etc/hosts
+echo "172.16.2.62 compute02" >> /etc/hosts
+```
+
+- Cài đặt các gói cần thiết:
+
+```
+yum -y install centos-release-openstack-queens
+yum -y install crudini wget vim
+yum -y install python-openstackclient openstack-selinux python2-PyMySQL
+```
+
+- Cài đặt và cấu hình NTP:
+
+```
+yum -y install chrony
+VIP_MGNT_IP='172.16.2.56'
+sed -i '/server/d' /etc/chrony.conf
+echo "server $VIP_MGNT_IP iburst" >> /etc/chrony.conf
+systemctl enable chronyd.service
+systemctl restart chronyd.service
+chronyc sources
+```
+
+![](../images/1-install-manual-ops/chrony.png)
+
+- Chinh sua file `/etc/yum.repos.d/CentOS-QEMU-EV.repo`
+
+### 3.2. Cài đặt nova
+
+- Cài đặt Packages:
+
+```
+yum install openstack-nova-compute libvirt-client -y
+```
+
+- Cấu hình nova:
+
+```
+cp /etc/nova/nova.conf  /etc/nova/nova.conf.org
+rm -rf /etc/nova/nova.conf
+```
+
+```
+cat << EOF >> /etc/nova/nova.conf 
+[DEFAULT]
+enabled_apis = osapi_compute,metadata
+transport_url = rabbit://openstack:013279227Anh@172.16.2.56:5672
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+[api]
+auth_strategy = keystone
+[api_database]
+[barbican]
+[cache]
+[cells]
+[cinder]
+[compute]
+[conductor]
+[console]
+[consoleauth]
+[cors]
+[crypto]
+[database]
+[devices]
+[ephemeral_storage_encryption]
+[filter_scheduler]
+[glance]
+api_servers = http://172.16.2.56:9292
+[guestfs]
+[healthcheck]
+[hyperv]
+[ironic]
+[key_manager]
+[keystone]
+[keystone_authtoken]
+auth_url = http://172.16.2.56:5000/v3
+memcached_servers = 172.16.2.56:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = 013279227Anh
+[libvirt]
+virt_type = qemu
+[matchmaker_redis]
+[metrics]
+[mks]
+[neutron]
+url = http://172.16.2.56:9696
+auth_url = http://172.16.2.56:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = 013279227Anh
+[notifications]
+[osapi_v21]
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+rabbit_ha_queues = true
+rabbit_retry_interval = 1
+rabbit_retry_backoff = 2
+amqp_durable_queues= true
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[pci]
+[placement]
+os_region_name = RegionOne
+project_domain_name = Default
+project_name = service
+auth_type = password
+user_domain_name = Default
+auth_url = http://172.16.2.56:5000/v3
+username = placement
+password = 013279227Anh
+[quota]
+[rdp]
+[remote_debug]
+[scheduler]
+discover_hosts_in_cells_interval = 300
+[serial_console]
+[service_user]
+[spice]
+[upgrade_levels]
+[vault]
+[vendordata_dynamic_auth]
+[vmware]
+[vnc]
+enabled = True
+server_listen = 0.0.0.0
+server_proxyclient_address = 172.16.2.59 // IP node compute tuong ung
+novncproxy_base_url = http://172.16.2.56:6080/vnc_auto.html
+[workarounds]
+[wsgi]
+[xenserver]
+[xvp]
+EOF
+```
+
+- Phân quyền file cấu hình `/etc/nova/nova.conf`:
+
+```
+chown root:nova /etc/nova/nova.conf
+```
+
+### 3.3.  Cài đặt neutron
+
+- Cài đặt Packages:
+
+```
+yum install openstack-neutron openstack-neutron-ml2 openstack-neutron-linuxbridge ebtables -y
+```
+
+- Cấu hình neutron:
+
+```
+cp /etc/neutron/neutron.conf /etc/neutron/neutron.conf.org 
+rm -rf /etc/neutron/neutron.conf
+```
+
+- Cấu hình file LB agent:
+
+Lưu ý khi chạy đoạn ở dưới chú ý 2 tham số:
+
+physical_interface_mappings = provider:ens256 (interface name provider)
+
+local_ip = 10.10.41.72 (IP dải DATAVM `compute01`) - đổi sang IP tương ứng với `compute02`
+
+```
+cat << EOF >> /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+[DEFAULT]
+[agent]
+[linux_bridge]
+physical_interface_mappings = provider:ens256
+[network_log]
+[securitygroup]
+enable_security_group = true
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+[vxlan]
+enable_vxlan = true
+local_ip = 10.10.41.72
+l2_population = true
+EOF
+```
+
+- Cấu hình dhcp agent:
+
+```
+cp /etc/neutron/dhcp_agent.ini /etc/neutron/dhcp_agent.ini.org
+rm -rf /etc/neutron/dhcp_agent.ini
+```
+
+```
+cat << EOF >> /etc/neutron/dhcp_agent.ini
+[DEFAULT]
+interface_driver = linuxbridge
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+enable_isolated_metadata = true
+force_metadata = True
+[agent]
+[ovs]
+EOF
+```
+
+- Cấu hình metadata agent:
+
+```
+cp /etc/neutron/metadata_agent.ini /etc/neutron/metadata_agent.ini.org 
+rm -rf /etc/neutron/metadata_agent.ini
+```
+
+```
+cat << EOF >> /etc/neutron/metadata_agent.ini
+[DEFAULT]
+nova_metadata_host = 172.16.2.56
+metadata_proxy_shared_secret = 013279227Anh
+[agent]
+[cache]
+EOF
+```
+
+- Phân quyền
+
+```
+chown root:neutron /etc/neutron/metadata_agent.ini /etc/neutron/neutron.conf /etc/neutron/dhcp_agent.ini /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+```
+
+- Restart service nova
+
+```
+systemctl restart libvirtd.service openstack-nova-compute
+```
+
+- Enable, start service nova
+
+```
+systemctl enable neutron-linuxbridge-agent.service neutron-dhcp-agent.service neutron-metadata-agent.service
+systemctl restart neutron-linuxbridge-agent.service neutron-dhcp-agent.service neutron-metadata-agent.service
+```
+
