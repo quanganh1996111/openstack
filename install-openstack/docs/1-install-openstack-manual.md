@@ -831,3 +831,315 @@ openstack compute service list
 
 ![](../images/1-install-manual-ops/nova-services.png)
 
+### 2.9. Cài đặt và cấu hình neutron
+
+- Tạo database neutron:
+
+```
+mysql -u root -p
+CREATE DATABASE neutron;
+GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'localhost' IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY '013279227Anh';
+exit
+```
+
+- Tạo user, endpoint trên 1 node:
+
+```
+openstack user create --domain default --password 013279227Anh neutron
+openstack role add --project service --user neutron admin
+openstack service create --name neutron --description "OpenStack Networking" network
+```
+
+```
+openstack endpoint create --region RegionOne network public http://172.16.2.56:9696
+openstack endpoint create --region RegionOne network internal http://172.16.2.56:9696
+openstack endpoint create --region RegionOne network admin http://172.16.2.56:9696
+```
+
+- Cài đặt packages:
+
+```
+yum install openstack-neutron openstack-neutron-ml2 openstack-neutron-linuxbridge ebtables -y
+```
+
+- Cấu hình neutron:
+
+Bài lab này sử dụng mô hình mạng provider (flat) sử dụng linuxbridge DHCP agent và metadata agent được chạy trên node compute
+
+```
+cp /etc/neutron/neutron.conf /etc/neutron/neutron.conf.org
+rm -rf /etc/neutron/neutron.conf
+```
+
+```
+cat << EOF >> /etc/neutron/neutron.conf
+[DEFAULT]
+bind_host = 172.16.2.56
+core_plugin = ml2
+service_plugins = router
+transport_url = rabbit://openstack:013279227Anh@172.16.2.56:5672
+auth_strategy = keystone
+notify_nova_on_port_status_changes = true
+notify_nova_on_port_data_changes = true
+allow_overlapping_ips = True
+dhcp_agents_per_network = 2
+[agent]
+[cors]
+[database]
+connection = mysql+pymysql://neutron:013279227Anh@172.16.2.56/neutron
+[keystone_authtoken]
+auth_uri = http://172.16.2.56:5000
+auth_url = http://172.16.2.56:35357
+memcached_servers = 172.16.2.56:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = 013279227Anh
+[matchmaker_redis]
+[nova]
+auth_url = http://172.16.2.56:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = nova
+password = 013279227Anh
+[oslo_concurrency]
+lock_path = /var/lib/neutron/tmp
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+rabbit_retry_interval = 1
+rabbit_retry_backoff = 2
+amqp_durable_queues = true
+rabbit_ha_queues = true
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[quotas]
+[ssl]
+EOF
+```
+
+- Cấu hình file ml2:
+
+```
+cp /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/ml2_conf.ini.org
+rm -rf /etc/neutron/plugins/ml2/ml2_conf.ini
+```
+
+```
+cat << EOF >> /etc/neutron/plugins/ml2/ml2_conf.ini
+[DEFAULT]
+[l2pop]
+[ml2]
+type_drivers = flat,vlan,vxlan
+tenant_network_types = vxlan
+mechanism_drivers = linuxbridge,l2population
+extension_drivers = port_security
+[ml2_type_flat]
+[ml2_type_geneve]
+[ml2_type_gre]
+[ml2_type_vlan]
+network_vlan_ranges = provider
+[ml2_type_vxlan]
+vni_ranges = 1:1000
+[securitygroup]
+enable_ipset = True
+EOF
+```
+
+- Cấu hình file LB agent:
+
+```
+cp /etc/neutron/plugins/ml2/linuxbridge_agent.ini /etc/neutron/plugins/ml2/linuxbridge_agent.ini.org 
+rm -rf /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+```
+
+Lưu ý khi chạy đoạn ở dưới chú ý 2 tham số:
+
+physical_interface_mappings = provider:ens256 (interface name provider)
+
+local_ip = 10.10.41.71(ip dải datavm controller)
+
+```
+cat << EOF >> /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+[DEFAULT]
+[agent]
+[linux_bridge]
+physical_interface_mappings = provider:ens256
+[network_log]
+[securitygroup]
+enable_security_group = true
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+[vxlan]
+enable_vxlan = true
+local_ip = 10.10.41.71
+l2_population = true
+EOF
+```
+
+- Cấu hình trên file l3 agent:
+
+```
+cp /etc/neutron/l3_agent.ini /etc/neutron/l3_agent.ini.org
+rm -rf /etc/neutron/l3_agent.ini
+```
+
+```
+cat << EOF >> /etc/neutron/l3_agent.ini
+[DEFAULT]
+interface_driver = neutron.agent.linux.interface.BridgeInterfaceDriver
+[agent]
+[ovs]
+EOF
+```
+
+- Chỉnh sửa file `/etc/nova/nova.conf`
+
+```
+vi /etc/nova/nova.conf
+```
+
+```
+[neutron]
+url = http://172.16.2.56:9696
+auth_url = http://172.16.2.56:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = 013279227Anh
+service_metadata_proxy = true
+metadata_proxy_shared_secret = 013279227Anh
+```
+
+- Restart lại service nova-api:
+
+```
+systemctl restart openstack-nova-api.service
+```
+
+- Phân quyền file cấu hình
+
+```
+chown -R root:neutron /etc/neutron/
+```
+
+- Tạo liên kết
+
+```
+ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+```
+
+- Sync db (bỏ qua các cảnh báo Warning):
+
+```
+su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+```
+
+- Enable và start dịch vụ
+
+```
+systemctl restart openstack-nova-api.service openstack-nova-scheduler.service openstack-nova-consoleauth.service openstack-nova-conductor.service openstack-nova-novncproxy.service
+```
+
+```
+systemctl enable neutron-server.service neutron-linuxbridge-agent.service neutron-l3-agent.service
+systemctl start neutron-server.service neutron-linuxbridge-agent.service neutron-l3-agent.service
+```
+
+### 2.9. Cài đặt và cấu hình horizon
+
+- Tải packages:
+
+```
+yum install openstack-dashboard -y
+```
+
+- Tạo file direct:
+
+```
+filehtml=/var/www/html/index.html
+touch $filehtml
+cat << EOF >> $filehtml
+<html>
+<head>
+<META HTTP-EQUIV="Refresh" Content="0.5; URL=http://172.16.2.56/dashboard">
+</head>
+<body>
+<center> <h1>Redirecting to OpenStack Dashboard</h1> </center>
+</body>
+</html>
+EOF
+```
+
+- Backup cấu hình:
+
+```
+cp /etc/openstack-dashboard/local_settings /etc/openstack-dashboard/local_settings.org
+```
+
+- Thay đổi cấu hình trong file `/etc/openstack-dashboard/local_settings`
+
+```
+ALLOWED_HOSTS = ['*',]
+OPENSTACK_API_VERSIONS = {
+    "identity": 3,
+    "image": 2,
+    "volume": 2,
+}
+OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
+OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = 'Default'
+```
+
+- Lưu ý thêm `SESSION_ENGINE` vào trên dòng `CACHE` như bên dưới:
+
+```
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+CACHES = {
+    'default': {
+         'BACKEND':'django.core.cache.backends.memcached.MemcachedCache',
+         'LOCATION': ['172.16.2.56:11211',],
+    }
+}
+OPENSTACK_HOST = "172.16.2.56"
+OPENSTACK_KEYSTONE_URL = "http://172.16.2.56:5000/v3"
+OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+```
+
+- Lưu ý: Nếu chỉ sử dụng provider, chỉnh sửa các thông số sau
+
+```
+OPENSTACK_NEUTRON_NETWORK = {
+    'enable_router': False,
+    'enable_quotas': False,
+    'enable_ipv6': False,
+    'enable_distributed_router': False,
+    'enable_ha_router': False,
+    'enable_fip_topology_check': False,
+}
+```
+
+```
+TIME_ZONE = "Asia/Ho_Chi_Minh"
+```
+
+- Thêm vào file `/etc/httpd/conf.d/openstack-dashboard.conf`
+
+```
+echo "WSGIApplicationGroup %{GLOBAL}" >> /etc/httpd/conf.d/openstack-dashboard.conf
+```
+
+- Khởi động lại Dịch vụ:
+
+```
+systemctl restart httpd.service memcached.service
+```
