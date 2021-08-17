@@ -1628,3 +1628,23 @@ systemctl restart libvirtd.service openstack-nova-compute
 systemctl enable neutron-linuxbridge-agent.service neutron-dhcp-agent.service neutron-metadata-agent.service
 systemctl restart neutron-linuxbridge-agent.service neutron-dhcp-agent.service neutron-metadata-agent.service
 ```
+
+## Phần 4. Một số thao tác trên Horizon
+
+### 4.1. Truy cập Horizon
+
+Truy cập theo `http://172.16.2.56/` sẽ tự động chuyển hướng sang `http://172.16.2.56/dashboard`
+
+![](../images/1-install-manual-ops/horizen-login.png)
+
+![](../images/1-install-manual-ops/horizon-login-success.png)
+
+### 4.2. Tạo flavor
+
+```
+openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 0 m1.nano
+openstack flavor create --id 1 --vcpus 1 --ram 1024 --disk 0 m1.tiny
+openstack flavor create --id 2 --vcpus 2 --ram 2408 --disk 0 m1.small
+```
+
+![](../images/1-install-manual-ops/create-flavors.png)
