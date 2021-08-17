@@ -1143,3 +1143,30 @@ echo "WSGIApplicationGroup %{GLOBAL}" >> /etc/httpd/conf.d/openstack-dashboard.c
 ```
 systemctl restart httpd.service memcached.service
 ```
+
+### 2.10. Cài đặt và cấu hình Cinder
+
+Mô hình sử dụng một phân vùng riêng để lưu các volume của máy ảo.
+
+![](../images/1-install-manual-ops/lsblk-controller.png)
+
+- Tạo database cinder:
+
+```
+mysql -u root -p013279227Anh
+CREATE DATABASE cinder;
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'localhost' \
+  IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' \
+  IDENTIFIED BY '013279227Anh';
+exit
+```
+
+- 
+
+```
+openstack user create --domain default --password 013279227Anh cinder
+openstack role add --project service --user cinder admin
+openstack service create --name cinderv2 --description "OpenStack Block Storage" volumev2
+openstack service create --name cinderv3 --description "OpenStack Block Storage" volumev3
+```
