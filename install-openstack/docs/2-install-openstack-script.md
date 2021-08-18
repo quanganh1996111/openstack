@@ -160,6 +160,10 @@ openstack compute service list
 
 - Thực thi Script:
 
+**Lưu ý**: Trước khi chạy lệnh cần chỉnh sửa trong file script về tên của card mạng tương ứng.
+
+![](../images/2-install-script-ops/neutron-ip-nic.png)
+
 ```
 bash noha_ctl_neutron.sh
 ```
@@ -253,10 +257,12 @@ bash noha_ctl_horizon.sh
 
 ![](../images/2-install-script-ops/compute-nic.png)
 
-![](../images/2-install-script-ops/compute-nic-2.png
+![](../images/2-install-script-ops/compute-nic-2.png)
 
 ```
 curl -O https://raw.githubusercontent.com/domanhduy/openstack-tools/master/scripts/OpenStack-Queens-No-HA/CentOS7/noha_com_install.sh
  
 bash noha_com_install.sh
 ```
+
+![](../images/2-install-script-ops/ops-network-list.png)
