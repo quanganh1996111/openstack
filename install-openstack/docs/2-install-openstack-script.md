@@ -233,7 +233,7 @@ bash noha_ctl_cinder.sh aio
 bash noha_ctl_cinder.sh
 ```
 
-- Nếu chọn lựa chọn 2 thì cần cài đặt thêm các bước ở node cinder bên dưới, mục số 5.
+- Nếu chọn lựa chọn 2 thì cần cài đặt thêm các bước ở node cinder bên dưới, mục số 6 cuối bài.
 
 #### 2.10. Thực thi script noha_ctl_horizon.sh để cài đặt Dashboad
 
@@ -265,4 +265,117 @@ curl -O https://raw.githubusercontent.com/domanhduy/openstack-tools/master/scrip
 bash noha_com_install.sh
 ```
 
+### 4. Kiểm tra lại xem Nova và Neutron
+
+Để kiểm tra Nova và Neutron đã được cài thành công trên 2 node Compute1 và Compute2 hay chưa bằng các lệnh dưới.
+
+- Đứng trên `Controller` thực hiện lệnh kiểm tra các agent của neutron.
+
+```
+openstack network agent list
+```
+
 ![](../images/2-install-script-ops/ops-network-list.png)
+
+- Đứng trên `Controller` thực hiện lệnh kiểm tra service của nova
+
+![](../images/2-install-script-ops/nova-service-check.png)
+
+### 5. Tạo network và các máy ảo để kiểm chứng
+
+#### 5.1. Tạo provider network và subnet thuộc provider network
+
+- Tạo provider network. Lưu ID của network này để cung cấp khi tạo máy ảo.
+
+```
+openstack network create  --share --external \
+--provider-physical-network provider \
+--provider-network-type flat provider
+```
+
+Lưu lại ID: `9bc94d7e-21b4-418a-a775-5e8918a432a5`
+
+- Tạo subnet thuộc provider network. Lưu ý nhập đúng gateway, IP cấp cho máy ảo từ 100 - 150.
+
+```
+openstack subnet create subnet1_provider --network provider \
+--allocation-pool start=10.10.40.100,end=10.10.40.150 \
+--dns-nameserver 8.8.8.8 --gateway 10.10.40.1 \
+--subnet-range 10.10.40.0/24
+```
+
+#### 5.2. Tạo flavor
+
+```
+openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 1 m1.nano
+openstack flavor create --id 1 --vcpus 1 --ram 1024 --disk 20 m1.tiny
+openstack flavor create --id 2 --vcpus 2 --ram 2408 --disk 40 m1.small
+```
+
+#### 5.3. Mở các rule
+
+```
+openstack security group rule create --proto icmp default
+openstack security group rule create --proto tcp --dst-port 22 default
+```
+
+#### 5.4. Tạo máy ảo
+
+- Tạo máy ảo cần cung cấp các ID hoặc tên về images, network, flavor. Giả sử ID của network đã có, images là `cirros`, flavor có tên là `m1.nano`
+
+```
+openstack server create Provider_VM01 --flavor m1.nano --image cirros \
+--nic net-id=9bc94d7e-21b4-418a-a775-5e8918a432a5 --security-group default
+```
+
+- Chờ một lát, máy ảo sẽ được tạo, sau đó kiểm tra bằng lệnh dưới, ta sẽ thấy thông tin máy ảo và IP
+
+```
+openstack server list
+```
+
+- Lúc này có thể ping và ssh tới máy ảo bằng tài khoản `cirros` và mật khẩu là `cubswin:)`
+
+![](../images/2-install-script-ops/cirros-test.png)
+
+### 6. Cài đặt trên Cinder node
+
+Lựa chọn này sử dụng khi cinder-volume và cinder-backup nằm trên một máy chủ riêng.
+
+#### 6.1. Đặt hostname và IP
+
+Login vào máy chủ cinder và thực thi script dưới và khai báo các tham số về hostname và IP của các NICs.
+
+**Lưu ý**: Cần chỉnh sửa tên các card mạng tương ứng trong node để tránh lỗi.
+
+```
+curl -O https://raw.githubusercontent.com/domanhduy/openstack-tools/master/scripts/OpenStack-Rocky-No-HA/setup_ip.sh
+
+bash setup_ip.sh cinder1 IPNIC1 IPNIC2 IPNIC3 IPNIC4
+```
+
+#### 6.2. Cài đặt các gói bổ trợ cho Cinder node
+
+- **Lưu ý**: Đứng trên `controller` node, thực hiện script cài đặt các gói bổ trợ cho máy chủ `Cinder` trước khi cài.
+
+```
+bash noha_node_prepare.sh IPNIC1cinder1
+```
+
+#### 6.3. Thực thi script cài đặt cinder trên máy chủ cinder
+
+- Login vào máy chủ cinder và thực hiện script dưới tại thư mục root. Lưu ý, ở script trên đã copy file `config.cfg` từ máy chủ `controller` sang máy chủ `cinder`.
+
+```
+curl -O https://raw.githubusercontent.com/domanhduy/openstack-tools/master/scripts/OpenStack-Rocky-No-HA/noha_cinder_install.sh
+
+bash noha_cinder_install.sh
+```
+
+- Sau khi cài đặt xong trên máy chủ cinder, quay lại máy chủ controller kiểm tra xem cinder đã hoạt động hay chưa bằng lệnh.
+
+```
+openstack volume service list
+```
+
+Kết quả là các service của `cinder` sẽ hiển thị, việc `cinder-volume` tại `controller` node bị down là do ta không dùng `cinder-volume` không kích hoạt trên máy chủ `cinder`.
