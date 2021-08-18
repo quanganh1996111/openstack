@@ -567,3 +567,138 @@ openstack compute service list --os-region-name RegionTwo
 
 ### 5.3. Service cinder
 
+**Thực hiện trên node Controller của Region Two**
+
+Với dịch vụ Cinder, ta sẽ chỉnh sửa các mục `[keystone_authtoken]` tại `/etc/cinder/cinder.conf`
+
+```
+Sửa auth_uri, auth_url về 172.16.2.72
+region_name về RegionTwo
+```
+
+- Restart service cinder:
+
+```
+systemctl restart openstack-cinder-api.service openstack-cinder-volume.service openstack-cinder-scheduler.service
+```
+
+- Kiểm tra trên Node `Controller` của **Region One**
+
+```
+openstack volume service list --os-region-name RegionTwo
+```
+
+![](../images/3-install-multi-region-ops/ops-volume-list.png)
+
+### 5.4. Service neutron
+
+Với Neutron, ta cần chỉnh sửa lại settings trên node `Controller` và các node `Compute` của **Region Two**
+
+#### Thực hiện trên Node Controller 172.16.2.72
+
+Chỉnh sửa các mục `[keystone_authtoken]`, `[nova]` tại /etc/neutron/neutron.conf
+
+- Mục [keystone_authtoken]:
+
+```
+Sửa auth_uri, auth_url về 172.16.2.72
+region_name về RegionTwo
+```
+
+Mục [nova]
+
+auth_url về CTL 172.16.2.72
+region_name = RegionTwo
+
+#### Thực hiện trên các Node Compute
+
+Chỉnh sửa lại các mục [keystone_authtoken] tại /etc/neutron/neutron.conf
+
+```
+Sửa auth_uri, auth_url về 172.16.2.72
+region_name về RegionTwo
+```
+
+- Khởi động lại Dịch vụ:
+
+```
+systemctl restart neutron-linuxbridge-agent.service neutron-dhcp-agent.service neutron-metadata-agent.service
+```
+
+- Kiểm tra trên node `Controller` ở **Region One**
+
+```
+openstack network agent list --os-region-name RegionTwo
+```
+
+![](../images/3-install-multi-region-ops/network-agent-list.png)
+
+### Kiểm tra trên Horizon
+
+Truy cập vào Horizon Dashboard
+
+![](../images/3-install-multi-region-ops/ops-two-region-horizon.png)
+
+
+## 6. Một số lỗi 
+
+- Xuất hiện lỗi tại Node Compute
+
+```
+[root@compute01 ~]# cat /var/log/nova/nova-compute.log | grep ERROR
+
+2019-04-11 11:40:05.363 15299 ERROR nova.compute.manager [instance: 5350c69f-24de-4345-9556-0cc92faa3ef2] BuildAbortException: Build of instance 5350c69f-24de-4345-9556-0cc92faa3ef2 aborted: Invalid input received: Invalid image identifier or unable to access requested image. (HTTP 400) (Request-ID: req-1e69aa25-4f63-477d-a8a5-678ebf1bb869)
+```
+
+Kiểm tra lại cấu hình cinder:
+
+Tại Controller, có thể thiếu `glance_api_servers` section `[glance_api_servers]` `(/etc/cinder/cinder.conf)`
+
+Tại Compute, có thể thiếu `os_region_name` tại section `[cinder]` `(/etc/nova/nova.conf)`
+
+- Nếu xuất hiện lỗi tại Node Compute
+
+```
+2021-08-18 22:13:52.187 5420 ERROR nova.compute.manager [instance: 66eef324-058d-443e-afa6-8893f183a7db] PortBindingFailed: Binding failed for port 68e62053-fed2-4bd8-b3a8-0755012774ad, please check neutron logs for more information.
+```
+
+Kiểm tra lại cấu hình `neutron` và `service`
+
+- Lỗi khi tạo máy ảo
+
+```
+2021-08-18 22:13:52.187 5420 1296 ERROR nova.compute.manager ResourceProviderCreationFailed: Failed to create resource provider compute1
+```
+
+Chưa config mục `[placement]`:
+
+Chỉnh sửa `auth_url` về CTL 172.16.2.72
+
+```
+Sửa `os_region_name` về `RegionTwo`
+```
+
+## 7. Redirect dashboard horizon cụm region 2 về horizon cụm region 1
+
+Thao tác trên server horizon region `172.16.2.72`
+
+```
+vi /var/www/html/index.html
+```
+
+```
+<html>
+<head>
+<META HTTP-EQUIV="Refresh" Content="0.5; URL=http://172.16.2.72/dashboard">
+</head>
+<body>
+<center> <h1>Redirecting to OpenStack Dashboard</h1> </center>
+</body>
+</html>
+```
+
+- Restart lại httpd
+
+```
+systemctl restart httpd.service
+```
