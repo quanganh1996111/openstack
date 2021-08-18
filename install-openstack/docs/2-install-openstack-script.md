@@ -79,7 +79,7 @@ COM2_IP_NIC3=10.10.41.83
 COM2_IP_NIC4=10.10.50.83
 ```
 
-#### 2.3. Thực thi script noha_ctl_prepare.sh
+#### 2.3. Thực thi script `noha_ctl_prepare.sh`
 
 Lưu ý, lúc này cửa sổ nhắc lệnh đang ở thư mục `/root/CentOS7/` của node `controller1`
 
@@ -90,3 +90,173 @@ bash noha_ctl_prepare.sh
 ```
 
 **Lưu ý**: Khi tiến hành cài đặt sẽ yêu cầu mật khẩu root SSH của các node `controller` và `compute` nên cần để ý để tránh trường hợp tưởng scripts chạy tự động sẽ mất thời gian.
+
+#### 2.4. Thực thi script `noha_ctl_install_db_rabbitmq.sh` để cài đặt DB và các gói bổ trợ.
+
+Sau khi node `controller1` khởi động lại, đăng nhập bằng quyền root và thực thi các lệnh dưới.
+
+```
+cd /root/CentOS7/
+
+bash noha_ctl_install_db_rabbitmq.sh
+```
+
+![](../images/2-install-script-ops/script-database.png)
+
+#### 2.5. Thực thi script `noha_ctl_keystone.sh` để cài đặt `Keystone`
+
+- Thực thi script bằng lệnh dưới:
+
+```
+bash noha_ctl_keystone.sh
+```
+
+- Sau khi cài đặt xong `keystone`, script sẽ tạo ra 2 file source `admin-openrc` và `demo-openrc` nằm ở thư mục `/root`. Các file này chứa biến môi trường để làm việc với OpenStack. Thực hiện lệnh dưới để có thể tương tác với OpenStack bằng CLI.
+
+```
+source /root/admin-openrc
+```
+
+- Kiểm tra lại xem đã thao tác được với OpenStack bằng CLI hay chưa bằng lệnh
+
+```
+[root@controller1 ~]# openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2021-08-18T03:18:22+0000                                                                                                                                                                |
+| id         | gAAAAABhHG3uo_yLPGCEQYZbILy15B3bSA8KL6580tC_BpZwmyfKKrHhMcqRj1GWeBrhobuy7L367-5w-V3mpJbATmYE_ysM4HlFNopxiPQ-OZnaIsafbLdD7a1vqH6tRvaJ9ulITH69juMGu4G8_FuuPueTSI50zDOTXg_IR7S4RFaYZRaGwd4 |
+| project_id | a21e39dfc7f542cdb3d350a21165b5ca                                                                                                                                                        |
+| user_id    | 6fad19afd996469cb90ba18e063233f4                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+[root@controller1 ~]#
+```
+
+#### 2.6. Thực thi script `noha_ctl_glance.sh` để cài đặt `Glance`
+
+- Thực thi script dưới để cài đặt Glance
+
+```
+bash noha_ctl_glance.sh
+```
+
+#### 2.7. Thực thi script `noha_ctl_nova.sh` để cài đặt `Nova`
+
+- Thực thi script
+
+```
+bash noha_ctl_nova.sh
+```
+
+- Sau khi script thực thi xong, kiểm tra xem nova đã cài đặt thành công trên Controller bằng lệnh dưới
+
+```
+openstack compute service list
+```
+
+![](../images/2-install-script-ops/script-nova.png)
+
+#### 2.8. Thực thi script `noha_ctl_neutron.sh` để cài đặt `Neutron`
+
+- Thực thi Script:
+
+```
+bash noha_ctl_neutron.sh
+```
+
+#### 2.9. Thực thi script `noha_ctl_cinder.sh` để cài đặt `Cinder`
+
+Tại đây sẽ có 2 lựa chọn
+
+##### Lựa chọn 1:
+
+Cài tất cả các thành phần cinder trên node controller
+
+**Lưu ý**: Đối với lựa chọn này, máy Controller cần có 02 ổ cứng, ổ thứ nhất để cài OS, ổ thứ 2 (sdb hoặc vdb) dùng để tạo các LVM để Cinder sử dụng sau này. Chỉnh sửa lại trong script với ổ sdb hoặc vdb tương ứng.
+
+- Xác định ổ cứng, ở bài lab này là ổ `vdb`:
+
+```
+[root@controller1 CentOS7]# lsblk
+NAME   MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+vda    253:0    0  20G  0 disk
+├─vda1 253:1    0   1G  0 part /boot
+├─vda2 253:2    0   2G  0 part [SWAP]
+└─vda3 253:3    0  17G  0 part /
+vdb    253:16   0  50G  0 disk
+```
+
+- Chỉnh sửa trong `/root/CentOS7/noha_ctl_cinder.sh` với tên ổ tương ứng:
+
+```
+function create_lvm() {
+        if [ "$1" == "aio" ]; then
+                echocolor "Cai dat LVM"
+                sleep 3
+                yum -y install lvm2
+                systemctl enable lvm2-lvmetad.service
+                systemctl start lvm2-lvmetad.service
+
+                pvcreate /dev/vdb
+                vgcreate cinder-volumes /dev/vdb
+
+                cp /etc/lvm/lvm.conf /etc/lvm/lvm.conf.orig
+                #sed  -r -i 's#(filter = )(\[ "a/\.\*/" \])#\1["a\/vdb\/", "r/\.\*\/"]#g' /etc/lvm/lvm.conf
+    # fix filter cua lvm tren CentOS 7.4, chen vao dong 141 cua file /etc/lvm/lvm.conf
+    sed -i '141i\        filter = [ "a/vda/", "a/vdb/", "r/.*/"]' /etc/lvm/lvm.conf
+        else
+                echocolor "Khong cau hinh LVM vi ko cai cinder-volume"
+        fi
+
+}
+```
+
+- Chạy Scripts thực thi:
+
+```
+bash noha_ctl_cinder.sh aio
+```
+
+- Lúc này không cần thực thi trên node `cinder1` nữa bởi vì cinder-volume được cài trên node controller1. Bỏ qua việc cài đặt trên node cinder.
+
+##### Lựa chọn 2:
+
+- Lựa chọn này áp dụng cho mô hình tách node cinder-volume riêng và không nằm trên cùng trên cùng `controller`.
+
+- Lúc này, trên controller chỉ có `cinder-api`, `cinder-scheduler`. Trên node `cinder` cài `cinder-volume`. Ta sẽ không đưa keyword `aio`
+
+```
+bash noha_ctl_cinder.sh
+```
+
+- Nếu chọn lựa chọn 2 thì cần cài đặt thêm các bước ở node cinder bên dưới, mục số 5.
+
+#### 2.10. Thực thi script noha_ctl_horizon.sh để cài đặt Dashboad
+
+- Cài đặt dashboad để cung cấp giao diện cho OpenStack
+
+```
+bash noha_ctl_horizon.sh
+```
+
+### 3. Thực hiện cài đặt trên Compute1 và Compute2 (cài Nova và Neutron)
+
+#### 3.1. Cài đặt Nova và neutron trên Compute1 và Compute2
+
+- Login vào máy `compute1`, kiểm tra xem đã có file `config.cfg` trong thư mục root hay chưa. File này được copy khi thực hiện script đầu tiên ở trên node `Controller`. Nếu chưa có thì copy từ `Controller` sang. Nếu có rồi thì thực hiện bước dưới.
+
+![](../images/2-install-script-ops/script-nova.png)
+
+- Tải script cài đặt nova và neutron cho `compute1` và `compute2`:
+
+**Lưu ý**: Trước khi chạy Script cần phải kiểm tra lại bên trong script phần card mạng tương ứng với các node. Chỉnh sửa trong file `noha_com_install.sh`
+
+![](../images/2-install-script-ops/compute-nic.png)
+
+![](../images/2-install-script-ops/compute-nic-2.png
+
+```
+curl -O https://raw.githubusercontent.com/domanhduy/openstack-tools/master/scripts/OpenStack-Queens-No-HA/CentOS7/noha_com_install.sh
+ 
+bash noha_com_install.sh
+```

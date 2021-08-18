@@ -1009,7 +1009,7 @@ rm -rf /etc/neutron/plugins/ml2/linuxbridge_agent.ini
 
 Lưu ý khi chạy đoạn ở dưới chú ý 2 tham số:
 
-physical_interface_mappings = provider:ens256 (interface name provider)
+physical_interface_mappings = provider:eth1 (interface name provider)
 
 local_ip = 10.10.41.71(ip dải datavm controller)
 
@@ -1018,7 +1018,7 @@ cat << EOF >> /etc/neutron/plugins/ml2/linuxbridge_agent.ini
 [DEFAULT]
 [agent]
 [linux_bridge]
-physical_interface_mappings = provider:ens256
+physical_interface_mappings = provider:eth1
 [network_log]
 [securitygroup]
 enable_security_group = true
@@ -1599,7 +1599,7 @@ rm -rf /etc/neutron/neutron.conf
 
 Lưu ý khi chạy đoạn ở dưới chú ý 2 tham số:
 
-physical_interface_mappings = provider:ens256 (interface name provider)
+physical_interface_mappings = provider:eth1 (interface name provider)
 
 local_ip = 10.10.41.72 (IP dải DATAVM `compute01`) - đổi sang IP tương ứng với `compute02`
 
@@ -1608,7 +1608,7 @@ cat << EOF >> /etc/neutron/plugins/ml2/linuxbridge_agent.ini
 [DEFAULT]
 [agent]
 [linux_bridge]
-physical_interface_mappings = provider:ens256
+physical_interface_mappings = provider:eth1
 [network_log]
 [securitygroup]
 enable_security_group = true
