@@ -281,6 +281,10 @@ openstack network agent list
 
 - Đứng trên `Controller` thực hiện lệnh kiểm tra service của nova
 
+```
+openstack compute service list
+```
+
 ![](../images/2-install-script-ops/nova-service-check.png)
 
 ### 5. Tạo network và các máy ảo để kiểm chứng
