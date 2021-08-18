@@ -253,6 +253,10 @@ bash noha_ctl_horizon.sh
 
 - Tải script cài đặt nova và neutron cho `compute1` và `compute2`:
 
+```
+curl -O https://raw.githubusercontent.com/domanhduy/openstack-tools/master/scripts/OpenStack-Queens-No-HA/CentOS7/noha_com_install.sh
+```
+
 **Lưu ý**: Trước khi chạy Script cần phải kiểm tra lại bên trong script phần card mạng tương ứng với các node. Chỉnh sửa trong file `noha_com_install.sh`
 
 ![](../images/2-install-script-ops/compute-nic.png)
@@ -260,8 +264,6 @@ bash noha_ctl_horizon.sh
 ![](../images/2-install-script-ops/compute-nic-2.png)
 
 ```
-curl -O https://raw.githubusercontent.com/domanhduy/openstack-tools/master/scripts/OpenStack-Queens-No-HA/CentOS7/noha_com_install.sh
- 
 bash noha_com_install.sh
 ```
 
