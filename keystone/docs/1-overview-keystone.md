@@ -274,4 +274,4 @@ Hình dưới đây là bản tóm tắt cho các services và backends đi kèm
 
 Ngoài ra Keystone còn có thêm các services khác tuy nhiên đây là những services được dùng phổ biến nhất.
 
-![](../images/keystone-backend.pnd)
+![](../images/keystone-backend.png)
