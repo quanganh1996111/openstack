@@ -120,3 +120,5 @@ Dù là public hay private, mục tiêu của cloud computing là cung cấp quy
 - Các hạ tầng riêng biệt vẫn là các thực thể duy nhất nhưng được ràng buộc với nhau bởi công nghệ được tiêu chuẩn hóa hoặc độc quyền cho phép tính di động của dữ liệu và ứng dụng (Ví dụ: cloud bùng nổ để cân bằng tải giữa các đám mây)
 
 - Mục tiêu của hybrid cloud là tạo ra một môi trường thống nhất, tự động, có thể mở rộng, tận dụng tất cả những gì cơ sở hạ tầng đám mây công cộng có thể cung cấp, trong khi vẫn duy trì quyền kiểm soát dữ liệu quan trọng.
+
+[Bài tiếp theo](https://github.com/quanganh1996111/openstack/blob/main/1-overview/1b-cloud-computing.md)
