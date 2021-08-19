@@ -221,3 +221,61 @@ Tách biệt keystone và nhiệm vụ định danh, xác thực thông tin.
 |LDAP|- Nếu có sẵn LDAP trong công ty<br>- Sử dụng một mình LDAP nếu bạn có thể tạo service accounts trong LDAP|
 |Multiple Backends|- Được sử dụng nhiều trong các doanh nghiệp<br>- Dùng nếu service user không được cho phép trong LDAP|
 |Identity Provider|- Nếu bạn muốn có những lợi ích từ cơ chế mới Federated Identity<br>- Nếu đã có sẵn identity provider<br>- Keystone không thể kết nối tới LDAP<br>- Non-LDAP identity source|
+
+## Phần 4. Authentication
+
+Có rất nhiều cách để xác thực với Keystone service, trong đó 2 phương thức được dùng nhiều nhất là password và token.
+
+### 1. Password
+
+Phương thức phổ biến nhất cho user hoặc service để xác thực đó là dùng password. Đoạn payload(khối) phía dưới là ví dụ cho POST request tới Keystone. Người dùng có thể nhận được những thông tin cần thiết cho việc xác thực.
+
+![](../images/keystone-password.png)
+
+User section nhận diện thông tin domain trừ khi user’s globally unique ID được sử dụng để tránh nhầm lẫn giữa các user trùng tên.
+
+Scope section là tùy chọn nhưng thường được sử dụng để user thu thập service catalog. Scope được sử dụng để xác định project nào user được làm việc. Nếu user không có role on the project, request sẽ bị loại bỏ. Tương tự như user section, scope section phải có đủ information về project để tìm nó, domain phải được chỉ định, bởi project name cũng có thể trùng nhau giữa các domain khác nhau. Trừ khi cung cấp project ID(duy nhất trên tất cả các domain), khi đó không cần thông tin domain nữa.
+
+User request token bằng username, password và project scope. Token sau đó sẽ được sử dụng ở các OpenStack service khác.
+
+![](../images/keystone-password-2.png)
+
+### 2. Token
+
+Giống như password, user có thể yếu cầu 1 token mới từ token hiện tại. Payload của POST request này sẽ ít code hơn của password.
+
+![](../images/keystone-token.png)
+
+## Phần 5. Access Management and Authorization
+
+Quản lí truy cập và quy định users được sử dụng APIs nào là một trong những yếu tố quyết định khiến Keystone trở nên quan trọng trong OpenStack. Về bản chất, Keystone sẽ tạo ra **Role-Based Access Control (RBAC)** policy trên mỗi một public APIs endpoints. Các policies này nằm trên file `policy.json`.
+
+Dưới đây là một ví dụ về file `policy.json`, chứa targets và rules. Targets nằm bên trái và rules nằm ở phía bên phải. Trên đầu file, targets được thiết lập để xác định admin, owner và những user khác.
+
+![](../images/keystone-policy.png)
+
+Mỗi rule sẽ bắt đầu với `identity:` và xác định 1 controller có quyền quản lí API. Những targets đã được thiết lập được dùng để bảo vệ những targets mới. Bảng dưới đây mô tả việc mapping và bảo vệ giữa target và API.
+
+![](../images/keystone-policy-2.png)
+
+[Bảng mapping của policy target và API](https://docs.openstack.org/keystone/pike/getting-started/policy_mapping.html)
+
+## Phần 6. Backends and Services
+
+Hình dưới đây là bản tóm tắt cho các services và backends đi kèm.
+
+- Phần màu xanh lá cây thường sử dụng SQL.
+
+- Phần màu đỏ là backend thường sử dụng LDAP hoặc SQL,
+
+- Phần màu xanh da trời thường sử dụng SQL hoặc Memcache.
+
+- Còn policy service sẽ được lưu dưới dạng file.
+
+Ngoài ra Keystone còn có thêm các services khác tuy nhiên đây là những services được dùng phổ biến nhất.
+
+![](../images/keystone-backend.pnd)
+
+## Nguồn tham khảo
+
+https://github.com/danghai1996/OpenStack/blob/master/Keystone/01-TongQuanKeystone.md
