@@ -178,3 +178,48 @@ Keystone gán một tenant và một role cho user. Một user có thể có nhi
 
 ![](../1-overview/images/3-ops-structure/keystone-identity.png)
 
+**Các dịch vụ bên trong keystone bao gồm:**
+
+- **Identity**
+
+    - Cung cấp dịch vụ chứng thực và dữ liệu về Users, Groups, Projects, Domains Roles, metadata, etc.
+
+    - Về cơ bản, tất cả các dữ liệu này được quản lý bởi dịch vụ, cho phép các dịch vụ quản lý các thao tác CRUD (Create - Read - Update - Delete) với dữ liệu
+    
+    - Trong nhiều trường hợp khác, dữ liệu bị thu thập từ các dịch vụ backend được ủy quyền khác như LDAP
+
+- **Token**: Xác nhận và quản lý các tokens được sử dụng để xác thực yêu cầu khi thông tin của người dùng đã được xác minh.
+
+- **Catalog**: Cung cấp một endpoint registry sử dụng để phát hiện endpoint.
+
+- **Policy**: cung cấp engine để ủy quyền dựa trên rule và kết nối với giao diện quản lý rule.
+
+Mỗi dịch vụ này có thể được cấu hình để sử dụng một dịch vụ back-end. Một số back-end service điển hình:
+
+- **Key Value Store**: cung cấp giao diện hỗ trợ tìm kiếm theo khóa
+
+- **Memcached**: Là hệ thống phân phối và lưu trữ bộ nhớ đệm (cache) và chứa dữ liệu trên RAM. (lưu tạm thông tin những dữ liệu hay sử dụng và bộ nhớ RAM)
+
+- **SQL**: sử dụng SQLAlchemy để lưu trữ dữ liệu bền vững
+
+- **Pluggable Authentication Module (PAM)**: sử dụng dịch vụ PAM của hệ thống cục bộ cho việc xác thực
+
+- **LDAP**: kết nối thông qua LDAP tới một thư mục back-end, như Active Directory để xác thực các user và lấy thông tin về role
+
+Từ bản Juno, Keystone có tính năng mới là federation of identity service. Nghĩa là thay vì việc xác thực tập trung, việc xác thực sẽ phân tán trên Internet, hay còn gọi là Identity Providers(IdPs). Lợi ích của việc sử dụng IdPs:
+
+- Không cần phải dự phòng các user entries trong Keystone (các bản ghi về người dùng), bởi vì các user entries đã được lưu trữ trong cơ sở dữ liệu của các IdPs.
+
+- Không cần phải xây dựng mô hình xác thực trong Keystone, bởi vì các IdPs chịu trách nhiệm xác thực cho người dùng sử dụng bất kỳ công nghệ nào phù hợp. Do đó có thể kết hợp nhiều công nghệ xác thực khác nhau.
+
+- Nhiều tổ chức hợp tác có thể chia sẻ chung các dịch vụ cloud bằng cách mỗi tổ chức sẽ sử dụng IdP cục bộ để xác thực người dùng của họ.
+
+### 3.4. Swift - Object Storage Service
+
+Khi nhắc tới storage, người ta thường nói tới 3 thể loại chính đó là:
+
+- Block Storage
+
+- File Storage
+
+- Object Storage
