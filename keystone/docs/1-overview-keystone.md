@@ -275,7 +275,3 @@ Hình dưới đây là bản tóm tắt cho các services và backends đi kèm
 Ngoài ra Keystone còn có thêm các services khác tuy nhiên đây là những services được dùng phổ biến nhất.
 
 ![](../images/keystone-backend.pnd)
-
-## Nguồn tham khảo
-
-https://github.com/danghai1996/OpenStack/blob/master/Keystone/01-TongQuanKeystone.md
