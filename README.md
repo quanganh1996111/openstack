@@ -1,6 +1,12 @@
 # Ghi chép tìm hiểu về hệ thống OpenStack
 
-# Tìm hiểu chung
+Tìm hiểu về hệ thống OpenStack
+
+- Lý thuyết về Cloud Computing, OpenStack.
+
+- Mô hình triển khai hệ thống OpenStack.
+
+# Tìm hiểu chung về Cloud Computing
 
 # Cài đặt OpenStack
 
