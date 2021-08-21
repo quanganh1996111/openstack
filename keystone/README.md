@@ -20,4 +20,4 @@
 
 ## Nguồn tham khảo
 
-https://github.com/danghai1996/OpenStack/blob/master/Keystone/01-TongQuanKeystone.md
+https://github.com/danghai1996/OpenStack/blob/master/Keystone
