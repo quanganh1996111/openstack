@@ -312,6 +312,7 @@ rabbitmqctl set_user_tags openstack administrator
 
 ```
 mysql -u root -p
+CREATE DATABASE keystone;
 GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '013279227Anh';
 GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '013279227Anh';
 FLUSH PRIVILEGES;
