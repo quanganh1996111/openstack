@@ -695,7 +695,7 @@ openstack endpoint create --region RegionOne compute internal http://172.16.2.56
 ```
 
 ```
-openstack user create --domain default --password Welcome123 placement
+openstack user create --domain default --password 013279227Anh placement
 openstack role add --project service --user placement admin
 openstack service create --name placement --description "Placement API" placement
 ```
