@@ -1601,6 +1601,44 @@ cp /etc/neutron/neutron.conf /etc/neutron/neutron.conf.org
 rm -rf /etc/neutron/neutron.conf
 ```
 
+```
+cat << EOF >> /etc/neutron/neutron.conf
+[DEFAULT]
+transport_url = rabbit://openstack:013279227Anh@172.16.2.56:5672
+auth_strategy = keystone
+[agent]
+[cors]
+[database]
+[keystone_authtoken]
+auth_uri = http://172.16.2.56:5000
+auth_url = http://172.16.2.56:35357
+memcached_servers = 172.16.2.56:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = 013279227Anh
+[matchmaker_redis]
+[nova]
+[oslo_concurrency]
+lock_path = /var/lib/neutron/tmp
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+[oslo_messaging_rabbit]
+rabbit_ha_queues = true
+rabbit_retry_interval = 1
+rabbit_retry_backoff = 2
+amqp_durable_queues= true
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[quotas]
+[ssl]
+EOF
+```
+
 - Cấu hình file LB agent:
 
 Lưu ý khi chạy đoạn ở dưới chú ý 2 tham số:
