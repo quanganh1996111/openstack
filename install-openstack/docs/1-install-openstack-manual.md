@@ -1456,6 +1456,10 @@ chronyc sources
 
 - Chinh sua file `/etc/yum.repos.d/CentOS-QEMU-EV.repo`
 
+```
+sed -i 's|baseurl=http:\/\/mirror.centos.org\/$contentdir\/$releasever\/virt\/$basearch\/kvm-common\/|baseurl=http:\/\/mirror.centos.org\/centos\/7\/virt\/x86_64\/kvm-common\/|g' /etc/yum.repos.d/CentOS-QEMU-EV.repo
+```
+
 ### 2. Cài đặt nova
 
 - Cài đặt Packages:
