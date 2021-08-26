@@ -412,9 +412,10 @@ keystone-manage credential_setup --keystone-user keystone --keystone-group keyst
 
 ```
 keystone-manage bootstrap --bootstrap-password 013279227Anh \
- --bootstrap-admin-url http://172.16.2.56:5000/v3/ \
- --bootstrap-internal-url http://172.16.2.56:5000/v3/ \
- --bootstrap-public-url http://172.16.2.56:5000/v3/ \
+--bootstrap-admin-url http://172.16.2.56:5000/v3/ \
+--bootstrap-internal-url http://172.16.2.56:5000/v3/ \
+--bootstrap-public-url http://172.16.2.56:5000/v3/ \
+--bootstrap-region-id RegionOne
 ```
 
 - Khởi động lại Dịch vụ HTTPD
