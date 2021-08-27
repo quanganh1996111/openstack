@@ -26,3 +26,4 @@ Tìm hiểu về hệ thống OpenStack
 
 ### [KeyStone](https://github.com/quanganh1996111/openstack/tree/main/keystone)
 
+### [Glance](https://github.com/quanganh1996111/openstack/tree/main/glance)
