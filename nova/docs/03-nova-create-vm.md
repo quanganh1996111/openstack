@@ -87,3 +87,9 @@
 # Tham khảo
 
 https://github.com/lacoski/OpenStack-Note/blob/master/docs/nova/work-flow-launch-instance.md
+
+https://ilearnstack.wordpress.com/2013/04/26/request-flow-for-provisioning-instance-in-openstack/?preview=true&preview_id=410&preview_nonce=3618fe51b7
+
+https://www.slideshare.net/openstack/openstack-super-bootcamppdf
+
+https://www.slideshare.net/mirantis/openstack-architecture-43160012
