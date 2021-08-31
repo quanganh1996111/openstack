@@ -143,3 +143,43 @@ openstack server list
 | e8eb7a37-1c90-4b1e-85c9-ec14fe3b6501 | Provider_VM01 | ACTIVE | provider=10.10.40.114 | cirros-ceph | m1.nano |
 +--------------------------------------+---------------+--------+-----------------------+-------------+---------+
 ```
+
+### Show thông tin 1 VM
+
+```
+openstack server show [--diagnostics] <tên hoặc ID của VM>
+```
+
+`--diagnostics` : Hiển thị thông tin chẩn đoán của VM
+
+### Start, Stop, Reboot, Suspend, Resume VM
+
+```
+openstack <start|stop|reboot|suspend|resume VM> <tên hoặc ID máy>
+```
+
+### Xóa VM
+
+```
+openstack server delete [--wait] <tên hoặc ID server>
+```
+
+`--wait` : Đợi cho VM được xóa hoàn toàn
+
+### List danh sách Hypervisor
+
+```
+openstack hypervisor list
++----+---------------------+-----------------+-------------+-------+
+| ID | Hypervisor Hostname | Hypervisor Type | Host IP     | State |
++----+---------------------+-----------------+-------------+-------+
+|  1 | compute01           | QEMU            | 172.16.3.25 | up    |
+|  2 | compute02           | QEMU            | 172.16.3.26 | up    |
++----+---------------------+-----------------+-------------+-------+
+```
+
+### Snapshot
+
+Bản **Train** thay đổi câu lệnh snapshot, nó sẽ yêu cầu nhập thông tin volume chứ không còn là VM như các bản trước.
+
+**Tham khảo:** [Train - Volume snapshot](https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/volume-snapshot.html)
