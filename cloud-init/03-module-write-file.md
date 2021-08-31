@@ -1,7 +1,9 @@
 # Module Write file
 
 - Module cho phép tạo file trong quá trình tạo VM.
+
 - Encodeding bằng base64, gzip hoặc kết hợp cả 2
+
 - Không nên lưu file vào thư mục `/tmp` do khi boot có thể service `systemd-tmpfiles-clean` sẽ khiến các file thêm bị xóa
 
 ### B1: Chuẩn bị nội dung truyền vào để tạo file
