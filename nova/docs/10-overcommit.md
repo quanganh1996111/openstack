@@ -33,3 +33,5 @@ systemctl restart openstack-nova-scheduler.service
 systemctl restart openstack-nova-novncproxy.service
 systemctl restart openstack-nova-conductor.service
 ```
+
+## Chú ý: OpenStack chỉ hiển thị thống số tài nguyên thật, không hiển thị thông số tài nguyên ảo
