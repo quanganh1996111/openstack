@@ -147,10 +147,10 @@ force_metadata = True
 
 # Xem thêm
 
-- https://docs.openstack.org/neutron/train/configuration/config.html
+https://docs.openstack.org/neutron/train/configuration/config.html
 
-- https://docs.openstack.org/neutron/train/configuration/config.html
+https://docs.openstack.org/neutron/train/configuration/config.html
 
-- https://docs.openstack.org/neutron/train/configuration/ml2-conf.html
+https://docs.openstack.org/neutron/train/configuration/ml2-conf.html
 
-- https://docs.openstack.org/neutron/train/configuration/linuxbridge-agent.html
+https://docs.openstack.org/neutron/train/configuration/linuxbridge-agent.html
