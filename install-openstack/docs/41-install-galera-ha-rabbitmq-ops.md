@@ -124,6 +124,10 @@ yum install -y galera rsync
 
 - Stop MariaDB. **Lưu ý:** Không khởi động dịch vụ mariadb sau khi cài (Liên quan tới cấu hình Galera Mariadb)
 
+```
+systemctl stop mariadb
+```
+
 ### 3. Cấu hình Galera Cluster
 
 - Node 1:
