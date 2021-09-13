@@ -330,6 +330,12 @@ Cluster status of node rabbit@controller1
  {alarms,[{rabbit@controller1,[]}]}]
 ```
 
+- Khởi chạy App:
+
+```
+rabbitmqctl start_app
+```
+
 ### Thực hiện trên node controller2 và controller3
 
 - Phân quyền file `/var/lib/rabbitmq/.erlang.cookie`
