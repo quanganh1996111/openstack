@@ -183,6 +183,10 @@ systemctl enable mariadb
 
 - Kiểm tra trạng thái tại Node 1:
 
+```
+mysql -u root -e "SHOW STATUS LIKE 'wsrep_cluster_size'"
+```
+
 ![](../images/4-install-ops-ha-ceph/Screenshot_2.png)
 
 - Đặt mật khẩu xác thực Root:
