@@ -16,11 +16,11 @@ Tìm hiểu về hệ thống OpenStack
 
 ## Cài đặt OpenStack
 
-### [1. Cài đặt OPS Manual](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/1-install-openstack-manual.md)
+### [1. Cài đặt OPS Manual](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/01-install-openstack-manual.md)
 
-### [2. Cài đặt OPS bằng Scripts](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/2-install-openstack-script.md)
+### [2. Cài đặt OPS bằng Scripts](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/02-install-openstack-script.md)
 
-### [3. Cài đặt OPS Multi Region](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/3-install-openstack-multi-region.md)
+### [3. Cài đặt OPS Multi Region](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/03-install-openstack-multi-region.md)
 
 ## Các Project trong OpenStack
 
