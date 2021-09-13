@@ -246,3 +246,16 @@ Percona XtraDB Cluster Node is synced.
 
 ## Phần 2. Triển khai RabbitMQ Cluster
 
+## Phần 3. Triển khai HA Proxy - Pacemaker
+
+### 3.1. Cài đặt HA Proxy bản 1.8
+
+Thực hiện trên tất cả các node Controller
+
+- Cài đặt một số phần mềm cần thiết:
+
+```
+sudo yum install wget socat -y
+wget http://cbs.centos.org/kojifiles/packages/haproxy/1.8.1/5.el7/x86_64/haproxy18-1.8.1-5.el7.x86_64.rpm 
+yum install haproxy18-1.8.1-5.el7.x86_64.rpm -y
+```
