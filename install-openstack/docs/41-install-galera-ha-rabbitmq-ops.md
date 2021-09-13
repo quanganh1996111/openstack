@@ -141,11 +141,11 @@ wsrep_sst_method=rsync
 ' > /etc/my.cnf.d/server.cnf
 ```
 
-### Node 2 và Node 3
+#### Node 2 và Node 3
 
 Cấu hình tương ứng Node 1, Lưu ý thay thế các tham số theo đúng IP và Hostname của Node đó.
 
-### Khởi động lại MariaDB
+#### Khởi động lại MariaDB
 
 - Tại Node 1:
 
@@ -161,3 +161,88 @@ systemctl enable mariadb
 systemctl start mariadb
 systemctl enable mariadb
 ```
+
+- Kiểm tra trạng thái tại Node 1:
+
+![](../images/4-install-ops-ha-ceph/Screenshot_2.png)
+
+- Đặt mật khẩu xác thực Root:
+
+```
+password_galera_root=013279227Anh
+cat << EOF | mysql -uroot
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'172.16.3.20' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'172.16.3.21' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'172.16.3.22' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'controller1' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'controller2' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'controller3' IDENTIFIED BY '$password_galera_root';FLUSH PRIVILEGES;
+EOF
+```
+
+### 4. Cấu hình cho haproxy check mysql
+
+```
+yum install rsync xinetd crudini git -y
+git clone https://github.com/thaonguyenvan/percona-clustercheck
+cp percona-clustercheck/clustercheck /usr/local/bin
+
+cat << EOF >> /etc/xinetd.d/mysqlchk
+service mysqlchk
+{
+      disable = no
+      flags = REUSE
+      socket_type = stream
+      port = 9200
+      wait = no
+      user = nobody
+      server = /usr/local/bin/clustercheck
+      log_on_failure += USERID
+      only_from = 0.0.0.0/0
+      per_source = UNLIMITED
+}
+EOF
+```
+
+- Tạo service
+
+```
+echo 'mysqlchk 9200/tcp # MySQL check' >> /etc/services
+```
+
+- Tạo tài khoản check mysql
+
+```
+mysql -uroot -p013279227Anh
+GRANT PROCESS ON *.* TO 'clustercheckuser'@'localhost' IDENTIFIED BY 'clustercheckpassword!';
+FLUSH PRIVILEGES;
+EXIT
+```
+
+- Bật xinetd
+
+```
+systemctl start xinetd
+systemctl enable xinetd
+```
+
+- Kết quả:
+
+```
+[root@controller1 ~]# clustercheck
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Connection: close
+Content-Length: 40
+
+Percona XtraDB Cluster Node is synced.
+```
+
+- Cài đặt Plugins tương tự trên 2 node controller2 và controller3. **Lưu ý:** Bỏ qua phần tạo tài khoản mysql check vì 3 đã cài đặt Galera.
+
+## Phần 2. Triển khai RabbitMQ Cluster
+
