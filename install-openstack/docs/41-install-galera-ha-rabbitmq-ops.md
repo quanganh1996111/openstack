@@ -416,21 +416,13 @@ Tài khoản đã tạo ở trên: admin / 013279227Anh
 ### 3.1. Chuẩn bị môi trường (Trên tất cả các node)
 
 ```
-yum install pacemaker corosync pcs fence-agents-all resource-agents psmisc policycoreutils-python -y
+yum install pacemaker corosync haproxy pcs fence-agents-all resource-agents psmisc policycoreutils-python -y
 ```
 
 ```
 echo 013279227Anh | passwd --stdin hacluster
 systemctl enable pcsd.service pacemaker.service corosync.service haproxy.service
 systemctl start pcsd.service
-```
-
-- Cài đặt HA Proxy bản 1.8:
-
-```
-sudo yum install wget socat -y
-wget http://cbs.centos.org/kojifiles/packages/haproxy/1.8.1/5.el7/x86_64/haproxy18-1.8.1-5.el7.x86_64.rpm 
-yum install haproxy18-1.8.1-5.el7.x86_64.rpm -y
 ```
 
 ### 3.2. Cấu hình Cluster
