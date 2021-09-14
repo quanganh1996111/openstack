@@ -31,13 +31,6 @@ sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
 ```
 
-- Update OS:
-
-```
-yum install epel-release -y
-yum update -y
-```
-
 - Cài đặt `chrony`:
 
 ```
@@ -274,6 +267,8 @@ Percona XtraDB Cluster Node is synced.
 Thực hiện trên tất cả các node controller
 
 ```
+yum -y install epel-release
+yum update -y
 yum -y install erlang socat wget
 
 wget https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v3_6_10/rabbitmq-server-3.6.10-1.el7.noarch.rpm
@@ -462,10 +457,10 @@ op start interval=0 timeout=30 \
 op stop interval=0 timeout=30
 
 pcs resource create p_haproxy systemd:haproxy \
-	meta migration-threshold=3 failure-timeout=120 target-role=Started \
-	op monitor interval=30 timeout=60 \
-	op start interval=0 timeout=60 \
-	op stop interval=0 timeout=60   
+meta migration-threshold=3 failure-timeout=120 target-role=Started \
+op monitor interval=30 timeout=60 \
+op start interval=0 timeout=60 \
+op stop interval=0 timeout=60
 
 pcs constraint colocation add vip_public with p_haproxy score=INFINITY
 pcs constraint order start vip_public then start p_haproxy
@@ -476,7 +471,7 @@ pcs constraint order start vip_public then start p_haproxy
 Cấu hình trên cả 3 node controller
 
 ```
-cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.org 
+cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.org
 rm -rf /etc/haproxy/haproxy.cfg
 ```
 
