@@ -31,3 +31,7 @@ Cấu hình mô hình Galare 3 Node - tham khảo [tại đây](https://github.c
 ## Phần 3. Triển khai RabbitMQ
 
 [Các bước thực hiện](https://github.com/quanganh1996111/openstack/blob/main/install-openstack/docs/41-install-galera-ha-rabbitmq-ops.md#ph%E1%BA%A7n-2-tri%E1%BB%83n-khai-rabbitmq-cluster)
+
+## Phần 4. Triển khai OpenStack cho các node Controller
+
+[Các bước thực hiện]
