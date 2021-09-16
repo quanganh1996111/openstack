@@ -1167,3 +1167,186 @@ systemctl restart httpd.service memcached.service
 ![](../images/4-install-ops-ha-ceph/Screenshot_8.png)
 
 ### Sau bước này tiến hành cấu hình các node compute
+
+## Phần 10. Cấu hình Cinder
+
+Sau khi hoàn thành cấu hình cho các node compute, quay lại cấu hình Cinder cho các node Controller. Để cấu hình High Availability cho OpenStack ta cần CEPH.
+
+Tham khảo việc cài đặt CEPH [tại đây](https://github.com/quanganh1996111/ceph/tree/main/ceph/thuc-hanh/docs)
+
+- Tải package cho tất cả các node controller
+
+```
+yum install openstack-cinder -y
+```
+
+### Thao tác trên node controller1
+
+- Tạo Database:
+
+```
+mysql -u root -p013279227Anh
+CREATE DATABASE cinder;
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'localhost' \
+IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' \
+IDENTIFIED BY '013279227Anh';
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'controller1' IDENTIFIED BY '013279227Anh';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'controller2' IDENTIFIED BY '013279227Anh';FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'controller3' IDENTIFIED BY '013279227Anh';FLUSH PRIVILEGES;
+exit
+```
+
+- Tạo mới endpoint:
+
+```
+openstack user create --domain default --password 013279227Anh cinder
+openstack role add --project service --user cinder admin
+openstack service create --name cinderv2 \
+--description "OpenStack Block Storage" volumev2
+  
+openstack service create --name cinderv3 \
+--description "OpenStack Block Storage" volumev3
+  
+openstack endpoint create --region RegionOne \
+volumev2 public http://172.16.3.29:8776/v2/%\(project_id\)s
+openstack endpoint create --region RegionOne \
+volumev2 internal http://172.16.3.29:8776/v2/%\(project_id\)s
+openstack endpoint create --region RegionOne \
+volumev2 admin http://172.16.3.29:8776/v2/%\(project_id\)s
+openstack endpoint create --region RegionOne \
+volumev3 public http://172.16.3.29:8776/v3/%\(project_id\)s
+openstack endpoint create --region RegionOne \
+volumev3 internal http://172.16.3.29:8776/v3/%\(project_id\)s
+openstack endpoint create --region RegionOne \
+volumev3 admin http://172.16.3.29:8776/v3/%\(project_id\)s
+```
+
+### Chỉnh sửa cấu hình cinder trên tất cả các node controller
+
+Cấu hình IP VIP, IP tương ứng với các node controller
+
+```
+cp /etc/cinder/cinder.conf /etc/cinder/cinder.conf.bak
+rm -rf /etc/cinder/cinder.conf
+
+cat << EOF >> /etc/cinder/cinder.conf
+[DEFAULT]
+my_ip = 172.16.3.20
+transport_url = rabbit://openstack:013279227Anh@172.16.3.20:5672,openstack:013279227Anh@172.16.3.21:5672,openstack:013279227Anh@172.16.3.22:5672
+auth_strategy = keystone
+osapi_volume_listen = 172.16.3.20
+[backend]
+[backend_defaults]
+[barbican]
+[brcd_fabric_example]
+[cisco_fabric_example]
+[coordination]
+[cors]
+[database]
+connection = mysql+pymysql://cinder:013279227Anh@172.16.3.29/cinder
+[fc-zone-manager]
+[healthcheck]
+[key_manager]
+[keystone_authtoken]
+auth_uri = http://172.16.3.29:5000
+auth_url = http://172.16.3.29:35357
+memcached_servers = 172.16.3.20:11211,172.16.3.21:11211,172.16.3.22:11211
+auth_type = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = cinder
+password = 013279227Anh
+[matchmaker_redis]
+[nova]
+[oslo_concurrency]
+lock_path = /var/lib/cinder/tmp
+[oslo_messaging_amqp]
+[oslo_messaging_kafka]
+[oslo_messaging_notifications]
+#driver = messagingv2
+[oslo_messaging_rabbit]
+rabbit_retry_interval = 1
+rabbit_retry_backoff = 2
+amqp_durable_queues = true
+rabbit_ha_queues = true
+[oslo_messaging_zmq]
+[oslo_middleware]
+[oslo_policy]
+[oslo_reports]
+[oslo_versionedobjects]
+[profiler]
+[service_user]
+[ssl]
+[vault]
+EOF
+```
+
+- Phân quyền:
+
+```
+chown root:cinder /etc/cinder/cinder.conf
+```
+
+- Chỉnh sửa file `/etc/nova/nova.conf`
+
+```
+[cinder]
+os_region_name = RegionOne
+```
+
+### Quay trở lại node controller1 để đồng bộ Database
+
+```
+su -s /bin/sh -c "cinder-manage db sync" cinder
+```
+
+### Restart lại Dịch vụ trên tất cả các node controller
+
+- Restart lại dịch vụ nova api
+
+```
+systemctl restart openstack-nova-api.service
+```
+
+- Enable và start dịch vụ cinder:
+
+```
+systemctl enable openstack-cinder-api.service openstack-cinder-volume.service openstack-cinder-scheduler.service
+systemctl start openstack-cinder-api.service openstack-cinder-volume.service openstack-cinder-scheduler.service
+```
+
+- Kiểm tra lại Dịch vụ:
+
+```
+[root@controller1 ~]# openstack volume service list
++------------------+-------------+------+---------+-------+----------------------------+
+| Binary           | Host        | Zone | Status  | State | Updated At                 |
++------------------+-------------+------+---------+-------+----------------------------+
+| cinder-scheduler | controller1 | nova | enabled | up    | 2021-09-16T01:27:33.000000 |
+| cinder-scheduler | controller2 | nova | enabled | up    | 2021-09-16T01:27:36.000000 |
+| cinder-scheduler | controller3 | nova | enabled | up    | 2021-09-16T01:27:39.000000 |
++------------------+-------------+------+---------+-------+----------------------------+
+```
+
+**Lưu ý:** Tại thời điểm chưa chỉ định cinder backend lý do sẽ tích hợp Ceph làm backend chung cho Cinder
+
+### Kiểm tra
+
+Test theo test case sau:
+
+- Bật cinder tại CTL 1, tắt cinder trên CTL 2 3, lấy list service
+
+- Bật cinder tại CTL 2, tắt cinder trên CTL 1 3, lấy list service
+
+- Bật cinder tại CTL 3, tắt cinder trên CTL 1 2, lấy list service
+
+- Sau khi cấu hình Cinder tại CTL 1 2 3
+
+```
+systemctl stop openstack-cinder-api.service openstack-cinder-volume.service openstack-cinder-scheduler.service
+openstack volume service list
+```
+
+Kiểm tra đồng thời HAProxy Stats: http://172.16.3.29:8080/stats
